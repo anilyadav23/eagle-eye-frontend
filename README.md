@@ -107,3 +107,5 @@ npm run build
 # Fast linter check
 npm run lint
 ```
+
+<!-- Auto-deploy trigger: linked to https://eagle-eye-ai-security-system.onrender.com -->
