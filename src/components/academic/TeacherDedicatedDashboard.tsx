@@ -7,8 +7,16 @@ import {
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
 
+interface StudentMarks {
+  rollNo: string;
+  name: string;
+  unitTest1: number;
+  midterm: number;
+  attendancePct: number;
+}
+
 export const TeacherDedicatedDashboard: React.FC = () => {
-  const { attendanceRecords, markAttendance } = useSecurity();
+  const { attendanceRecords, markAttendance, exportAttendanceCSV } = useSecurity();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'classroom' | 'tests' | 'records'>('classroom');
   
@@ -17,6 +25,19 @@ export const TeacherDedicatedDashboard: React.FC = () => {
   const [activeRoom, setActiveRoom] = useState('Lecture Hall 101 - CS301');
   const [isAttendanceFinalized, setIsAttendanceFinalized] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('CS301 - Computer Vision & AI');
+
+  // Test Marks State & Modal
+  const [marksData, setMarksData] = useState<StudentMarks[]>([
+    { rollNo: '22CS001', name: 'Aarya Sharma', unitTest1: 23, midterm: 46, attendancePct: 92 },
+    { rollNo: '22CS002', name: 'Rohan Mehta', unitTest1: 21, midterm: 42, attendancePct: 86 },
+    { rollNo: '22CS003', name: 'Neha Singh', unitTest1: 18, midterm: 34, attendancePct: 76 }
+  ]);
+  const [isAddMarksModalOpen, setIsAddMarksModalOpen] = useState(false);
+  const [newRollNo, setNewRollNo] = useState('');
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newUnitTest1, setNewUnitTest1] = useState(20);
+  const [newMidterm, setNewMidterm] = useState(40);
+  const [editingRollNo, setEditingRollNo] = useState<string | null>(null);
 
   // Student Draft list for current class session
   const [students, setStudents] = useState([
@@ -289,50 +310,173 @@ export const TeacherDedicatedDashboard: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-400">Manage midterms, quizzes, and continuous evaluation records</p>
             </div>
-            <button className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5" />
-              Add Test Marks Column
+            <button 
+              onClick={() => {
+                setEditingRollNo(null);
+                setNewRollNo('');
+                setNewStudentName('');
+                setNewUnitTest1(20);
+                setNewMidterm(40);
+                setIsAddMarksModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+            >
+              <Plus className="w-4 h-4" />
+              Add / Enter Test Marks
             </button>
           </div>
 
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-              <tr>
-                <th className="py-2.5 px-3">Roll No</th>
-                <th className="py-2.5 px-3">Student Name</th>
-                <th className="py-2.5 px-3">Unit Test 1 (25)</th>
-                <th className="py-2.5 px-3">Midterm (50)</th>
-                <th className="py-2.5 px-3">Attendance %</th>
-                <th className="py-2.5 px-3">Eligibility</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-mono">
-              <tr className="hover:bg-slate-900/60">
-                <td className="py-2.5 px-3 text-slate-400">22CS001</td>
-                <td className="py-2.5 px-3 font-bold text-white font-sans">Aarya Sharma</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-bold">23/25</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-bold">46/50</td>
-                <td className="py-2.5 px-3 text-sky-400">92%</td>
-                <td className="py-2.5 px-3 text-emerald-400">Eligible</td>
-              </tr>
-              <tr className="hover:bg-slate-900/60">
-                <td className="py-2.5 px-3 text-slate-400">22CS002</td>
-                <td className="py-2.5 px-3 font-bold text-white font-sans">Rohan Mehta</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-bold">21/25</td>
-                <td className="py-2.5 px-3 text-emerald-400 font-bold">42/50</td>
-                <td className="py-2.5 px-3 text-sky-400">86%</td>
-                <td className="py-2.5 px-3 text-emerald-400">Eligible</td>
-              </tr>
-              <tr className="hover:bg-slate-900/60">
-                <td className="py-2.5 px-3 text-slate-400">22CS003</td>
-                <td className="py-2.5 px-3 font-bold text-white font-sans">Neha Singh</td>
-                <td className="py-2.5 px-3 text-amber-400 font-bold">18/25</td>
-                <td className="py-2.5 px-3 text-amber-400 font-bold">34/50</td>
-                <td className="py-2.5 px-3 text-amber-400">76%</td>
-                <td className="py-2.5 px-3 text-amber-400">Borderline</td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Add / Edit Marks Modal */}
+          {isAddMarksModalOpen && (
+            <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400">
+                  {editingRollNo ? `Edit Marks for ${editingRollNo}` : 'Enter New Student Test Marks'}
+                </span>
+                <button 
+                  onClick={() => setIsAddMarksModalOpen(false)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Roll No</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 22CS005"
+                    disabled={!!editingRollNo}
+                    value={newRollNo}
+                    onChange={(e) => setNewRollNo(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Student Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Ankit Verma"
+                    value={newStudentName}
+                    onChange={(e) => setNewStudentName(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Unit Test 1 (Max 25)</label>
+                  <input
+                    type="number"
+                    max={25}
+                    min={0}
+                    value={newUnitTest1}
+                    onChange={(e) => setNewUnitTest1(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Midterm (Max 50)</label>
+                  <input
+                    type="number"
+                    max={50}
+                    min={0}
+                    value={newMidterm}
+                    onChange={(e) => setNewMidterm(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  onClick={() => setIsAddMarksModalOpen(false)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!newRollNo || !newStudentName) return;
+                    setMarksData(prev => {
+                      const exists = prev.findIndex(m => m.rollNo === newRollNo);
+                      if (exists >= 0) {
+                        const copy = [...prev];
+                        copy[exists] = {
+                          ...copy[exists],
+                          name: newStudentName,
+                          unitTest1: newUnitTest1,
+                          midterm: newMidterm
+                        };
+                        return copy;
+                      } else {
+                        return [...prev, {
+                          rollNo: newRollNo,
+                          name: newStudentName,
+                          unitTest1: newUnitTest1,
+                          midterm: newMidterm,
+                          attendancePct: 85
+                        }];
+                      }
+                    });
+                    setIsAddMarksModalOpen(false);
+                  }}
+                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30"
+                >
+                  Save Marks
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="py-2.5 px-3">Roll No</th>
+                  <th className="py-2.5 px-3">Student Name</th>
+                  <th className="py-2.5 px-3">Unit Test 1 (25)</th>
+                  <th className="py-2.5 px-3">Midterm (50)</th>
+                  <th className="py-2.5 px-3">Attendance %</th>
+                  <th className="py-2.5 px-3">Eligibility</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-mono">
+                {marksData.map((item) => (
+                  <tr key={item.rollNo} className="hover:bg-slate-900/60">
+                    <td className="py-2.5 px-3 text-slate-400">{item.rollNo}</td>
+                    <td className="py-2.5 px-3 font-bold text-white font-sans">{item.name}</td>
+                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{item.unitTest1}/25</td>
+                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{item.midterm}/50</td>
+                    <td className="py-2.5 px-3 text-sky-400">{item.attendancePct}%</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        item.attendancePct >= 75 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        {item.attendancePct >= 75 ? 'Eligible' : 'Borderline'}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-right space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingRollNo(item.rollNo);
+                          setNewRollNo(item.rollNo);
+                          setNewStudentName(item.name);
+                          setNewUnitTest1(item.unitTest1);
+                          setNewMidterm(item.midterm);
+                          setIsAddMarksModalOpen(true);
+                        }}
+                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-sans font-semibold inline-flex items-center gap-1"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -347,7 +491,10 @@ export const TeacherDedicatedDashboard: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-400">History of attendance finalized by your faculty account</p>
             </div>
-            <button className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-all flex items-center gap-1.5">
+            <button 
+              onClick={() => exportAttendanceCSV(selectedSubject)}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-semibold hover:bg-slate-700 transition-all flex items-center gap-1.5 shadow"
+            >
               <Download className="w-3.5 h-3.5" />
               Download Excel/CSV
             </button>

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { 
   Calendar, Clock, BookOpen, Users, Plus, 
-  MapPin, CheckCircle2, ChevronRight, Video
+  MapPin, CheckCircle2, ChevronRight, Video, X
 } from 'lucide-react';
 
 export const TimetableManagerView: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [selectedYear, setSelectedYear] = useState('2nd Year');
   const [selectedSection, setSelectedSection] = useState('Section A');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const scheduleSlots = [
+  const [scheduleSlots, setScheduleSlots] = useState([
     {
       time: '09:00 AM - 10:00 AM',
       courseCode: 'CS101',
@@ -48,24 +49,22 @@ export const TimetableManagerView: React.FC = () => {
       courseCode: 'CS202',
       courseName: 'Computer Networks (CN)',
       room: 'Room 202',
-      teacher: 'Prof. Sarah Khan',
+      teacher: 'Prof. Anjali Sen',
       type: 'Regular Class',
       status: 'Upcoming',
-      expectedStudents: 44,
-      camera: 'CAM-022'
-    },
-    {
-      time: '03:30 PM - 05:00 PM',
-      courseCode: 'CS301',
-      courseName: 'Computer Vision & AI Lab',
-      room: 'AI Vision Lab 1',
-      teacher: 'Dr. Rajesh Iyer',
-      type: 'Extra Class',
-      status: 'Upcoming',
-      expectedStudents: 32,
-      camera: 'CAM-031'
+      expectedStudents: 52,
+      camera: 'CAM-015'
     }
-  ];
+  ]);
+
+  // New Class Form State
+  const [newCourseName, setNewCourseName] = useState('Advanced Machine Learning');
+  const [newCourseCode, setNewCourseCode] = useState('CS308');
+  const [newTime, setNewTime] = useState('03:00 PM - 04:00 PM');
+  const [newRoom, setNewRoom] = useState('Lecture Hall 101');
+  const [newTeacher, setNewTeacher] = useState('Dr. Rajesh Iyer');
+  const [newType, setNewType] = useState('Extra Class');
+  const [newExpectedStudents, setNewExpectedStudents] = useState(50);
 
   return (
     <div className="space-y-6">
@@ -131,12 +130,118 @@ export const TimetableManagerView: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow">
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow"
+          >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Extra / Combined Class</span>
           </button>
         </div>
       </div>
+
+      {/* Add Extra / Combined Class Modal */}
+      {isAddModalOpen && (
+        <div className="p-4 rounded-xl bg-slate-950 border border-sky-500/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-sky-400">Add Extra / Combined Class Session</span>
+            <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Course Name</label>
+              <input
+                type="text"
+                value={newCourseName}
+                onChange={(e) => setNewCourseName(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Course Code</label>
+              <input
+                type="text"
+                value={newCourseCode}
+                onChange={(e) => setNewCourseCode(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Time Slot</label>
+              <input
+                type="text"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Assigned Room</label>
+              <input
+                type="text"
+                value={newRoom}
+                onChange={(e) => setNewRoom(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Faculty / Teacher</label>
+              <input
+                type="text"
+                value={newTeacher}
+                onChange={(e) => setNewTeacher(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1 font-semibold">Session Type</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+              >
+                <option value="Extra Class">Extra Class</option>
+                <option value="Combined Class (Sec A + B)">Combined Class (Sec A + B)</option>
+                <option value="Remedial / Revision Session">Remedial / Revision Session</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-2">
+            <button
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setScheduleSlots(prev => [
+                  ...prev,
+                  {
+                    time: newTime,
+                    courseCode: newCourseCode,
+                    courseName: newCourseName,
+                    room: newRoom,
+                    teacher: newTeacher,
+                    type: newType,
+                    status: 'Scheduled',
+                    expectedStudents: newExpectedStudents,
+                    camera: 'CAM-021'
+                  }
+                ]);
+                setIsAddModalOpen(false);
+              }}
+              className="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow"
+            >
+              Add to Timetable
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Timetable Schedule Cards (Page 3 & 7) */}
       <div className="space-y-3">
