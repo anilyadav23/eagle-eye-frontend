@@ -26,9 +26,9 @@ interface StudentMarks {
 }
 
 export const TeacherDedicatedDashboard: React.FC = () => {
-  const { attendanceRecords, markAttendance, exportAttendanceCSV } = useSecurity();
+  const { attendanceRecords, markAttendance, exportAttendanceCSV, approvalRequests, updateApprovalRequestStatus } = useSecurity();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'classroom' | 'tests' | 'records'>('classroom');
+  const [activeTab, setActiveTab] = useState<'classroom' | 'tests' | 'records' | 'approvals'>('classroom');
   
   // Class state
   const [classType, setClassType] = useState<'Regular Class' | 'Extra Class' | 'Combined Class' | 'Substitute'>('Regular Class');
@@ -207,18 +207,28 @@ export const TeacherDedicatedDashboard: React.FC = () => {
           {[
             { id: 'classroom', label: 'Live Roll Call' },
             { id: 'tests', label: 'Internal Test Marks' },
-            { id: 'records', label: 'Session Attendance Log' }
+            { id: 'records', label: 'Session Attendance Log' },
+            { 
+              id: 'approvals', 
+              label: 'Student Approvals',
+              badge: approvalRequests.filter(r => r.status === 'Pending').length
+            }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activeTab === tab.id
                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-bold'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 font-mono">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -806,6 +816,98 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Student Registration Approvals Tab */}
+      {activeTab === 'approvals' && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-400" />
+                Faculty Student Onboarding & Clearance Approvals
+              </h2>
+              <p className="text-xs text-slate-400">
+                Review new student registration profiles and identity credentials. Approving immediately unlocks their login.
+              </p>
+            </div>
+            <div className="text-xs font-mono text-slate-400">
+              {approvalRequests.filter(r => r.status === 'Pending').length} Pending Requests
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {approvalRequests.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs">No approval requests currently in queue.</div>
+            ) : (
+              approvalRequests.map(req => (
+                <div key={req.id} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex -space-x-2">
+                      {req.photos && req.photos.map((photo, pIdx) => (
+                        <img
+                          key={pIdx}
+                          src={photo}
+                          alt="applicant"
+                          className="w-12 h-12 rounded-xl object-cover border-2 border-slate-800 shadow-md"
+                        />
+                      ))}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-bold text-white">{req.studentName}</span>
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                          {req.rollNo}
+                        </span>
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">
+                          {req.type}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1">
+                        {req.branch} • {req.year} ({req.semester}) • Sec: {req.section} • Submitted {req.submittedAt}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                        Email: {req.email} • Mobile: {req.mobile}
+                      </div>
+                      {req.reason && (
+                        <div className="text-xs text-slate-300 mt-1 italic">
+                          "{req.reason}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    {req.status === 'Pending' ? (
+                      <>
+                        <button
+                          onClick={() => updateApprovalRequestStatus(req.id, 'Approved')}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Approve Student
+                        </button>
+                        <button
+                          onClick={() => updateApprovalRequestStatus(req.id, 'Rejected')}
+                          className="px-4 py-2 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-xs font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <span className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono ${
+                        req.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                      }`}>
+                        Status: {req.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

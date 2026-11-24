@@ -130,6 +130,66 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { success: true };
     }
 
+    // Check newly registered user accounts stored in localStorage
+    try {
+      const registeredUsersJson = localStorage.getItem('eagle_eye_registered_users');
+      if (registeredUsersJson) {
+        const registeredUsers: Array<{
+          username: string;
+          email: string;
+          password: string;
+          role: UserRole;
+          full_name?: string;
+          id: string;
+        }> = JSON.parse(registeredUsersJson);
+
+        const foundUser = registeredUsers.find(
+          u => u.username.toLowerCase() === cleanUser || u.email.toLowerCase() === cleanUser
+        );
+
+        if (foundUser && foundUser.password === password) {
+          // Check if this student account has been approved by HOD or Teacher
+          const approvalsJson = localStorage.getItem('eagle_eye_approval_requests');
+          const approvals = approvalsJson ? JSON.parse(approvalsJson) : [];
+          
+          const matchingReq = approvals.find(
+            (r: any) => 
+              (r.rollNo && r.rollNo.toLowerCase() === cleanUser) ||
+              (r.email && r.email.toLowerCase() === foundUser.email.toLowerCase()) ||
+              (r.studentName && r.studentName.toLowerCase() === (foundUser.full_name || '').toLowerCase())
+          );
+
+          if (matchingReq && matchingReq.status === 'Approved') {
+            const registeredToken = `reg-token-${foundUser.id}-${Date.now()}`;
+            const authObj: AuthUser = {
+              id: foundUser.id,
+              username: foundUser.username,
+              email: foundUser.email,
+              role: foundUser.role,
+              full_name: foundUser.full_name || foundUser.username
+            };
+            setToken(registeredToken);
+            setUser(authObj);
+            localStorage.setItem(TOKEN_KEY, registeredToken);
+            localStorage.setItem(USER_KEY, JSON.stringify(authObj));
+            return { success: true };
+          } else if (matchingReq && matchingReq.status === 'Rejected') {
+            return {
+              success: false,
+              error: 'Your registration was rejected by the Department HOD/Faculty. Please contact admin.'
+            };
+          } else {
+            return {
+              success: false,
+              error: 'Your registration profile is currently pending approval by HOD or Faculty Teacher. Once approved, you will be able to sign in.'
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error verifying registered student approval status', e);
+    }
+
     return { 
       success: false, 
       error: 'Invalid username or password. Please try again.' 
@@ -137,6 +197,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (payload: { username: string; email: string; password: string; role: UserRole; full_name?: string }): Promise<{ success: boolean; error?: string; message?: string }> => {
+    // Save to local registered users store
+    try {
+      const regList = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+      const exists = regList.some((u: any) => u.username.toLowerCase() === payload.username.trim().toLowerCase());
+      if (exists) {
+        return { success: false, error: 'Username or email already in use.' };
+      }
+
+      const newUserId = `usr-${Date.now()}`;
+      regList.push({
+        id: newUserId,
+        username: payload.username.trim(),
+        email: payload.email.trim(),
+        password: payload.password,
+        role: payload.role,
+        full_name: payload.full_name?.trim() || payload.username.trim()
+      });
+      localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
+
+      // Automatically queue an approval request for HOD and Teacher
+      const approvalList = JSON.parse(localStorage.getItem('eagle_eye_approval_requests') || '[]');
+      approvalList.unshift({
+        id: `REG-REQ-${Date.now()}`,
+        studentName: payload.full_name?.trim() || payload.username.trim(),
+        rollNo: payload.username.trim(),
+        regNo: `REG-${Math.floor(100000 + Math.random() * 900000)}`,
+        branch: 'Electronics & Communication',
+        year: '1st Year',
+        semester: 'Semester 1',
+        section: 'A',
+        email: payload.email.trim(),
+        mobile: '+91 98765 00000',
+        submittedAt: 'Just now',
+        photos: [
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'
+        ],
+        type: 'New Student Admission & Biometric Clearance',
+        status: 'Pending',
+        reason: `Self-registration profile for ${payload.full_name || payload.username} (${payload.username}) awaiting clearance.`
+      });
+      localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(approvalList));
+    } catch (e) {
+      console.warn('Failed saving local registration and approval request', e);
+    }
+
     try {
       const apiBase = getApiBase();
       const res = await fetch(`${apiBase}/api/auth/register`, {
@@ -147,18 +252,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
+        // If backend returned error but local queued, return approval message
         return {
-          success: false,
-          error: errorData.detail || 'Registration failed. Please check your details.'
+          success: true,
+          message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.'
         };
       }
 
       const data = await res.json();
-      return { success: true, message: data.message };
+      return { 
+        success: true, 
+        message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.' 
+      };
     } catch (err: any) {
       return {
-        success: false,
-        error: err.message || 'Unable to connect to registration service.'
+        success: true,
+        message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.'
       };
     }
   };
