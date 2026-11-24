@@ -90,47 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check fallback demo users if username matches standard demo profiles
     const demoProfile = DEMO_FALLBACK_USERS[cleanUser];
 
-    try {
-      const apiBase = getApiBase();
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-      const res = await fetch(`${apiBase}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        const accessToken = data.access_token;
-        const userInfo: AuthUser = data.user;
-
-        setToken(accessToken);
-        setUser(userInfo);
-        localStorage.setItem(TOKEN_KEY, accessToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(userInfo));
-        return { success: true };
-      }
-    } catch (err) {
-      // Backend request unreachable or timed out (e.g. standalone static frontend)
-      console.warn('Backend auth unreachable, evaluating demo fallback credentials', err);
-    }
-
-    // Seamless offline/standalone demo authentication fallback
-    // Matches if username is hodecc, hod, ecehod, teacher, student, admin, or guard
-    if (demoProfile && demoProfile.pass.some(p => p.toLowerCase() === cleanPass.toLowerCase() || p === password)) {
-      const fallbackToken = `demo-token-${cleanUser}-${Date.now()}`;
-      setToken(fallbackToken);
-      setUser(demoProfile.user);
-      localStorage.setItem(TOKEN_KEY, fallbackToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(demoProfile.user));
-      return { success: true };
-    }
-
-    // Check newly registered user accounts stored in localStorage
+    // 1. First, check registered user accounts to strictly enforce approval for newly registered students
     try {
       const registeredUsersJson = localStorage.getItem('eagle_eye_registered_users');
       if (registeredUsersJson) {
@@ -188,6 +148,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (e) {
       console.warn('Error verifying registered student approval status', e);
+    }
+
+    // 2. Try live backend authentication
+    try {
+      const apiBase = getApiBase();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(`${apiBase}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        const accessToken = data.access_token;
+        const userInfo: AuthUser = data.user;
+
+        setToken(accessToken);
+        setUser(userInfo);
+        localStorage.setItem(TOKEN_KEY, accessToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(userInfo));
+        return { success: true };
+      } else if (res.status === 403) {
+        const errData = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errData.detail || 'Your registration profile is currently pending approval by HOD or Faculty Teacher. Once approved, you will be able to sign in.'
+        };
+      }
+    } catch (err) {
+      // Backend request unreachable or timed out (e.g. standalone static frontend)
+      console.warn('Backend auth unreachable, evaluating demo fallback credentials', err);
+    }
+
+    // 3. Fallback for pre-configured staff/demo roles (HOD, Teacher, Admin, Guard, Pre-seeded student)
+    // Matches if username is hodecc, hod, ecehod, teacher, student, admin, or guard
+    if (demoProfile && demoProfile.pass.some(p => p.toLowerCase() === cleanPass.toLowerCase() || p === password)) {
+      const fallbackToken = `demo-token-${cleanUser}-${Date.now()}`;
+      setToken(fallbackToken);
+      setUser(demoProfile.user);
+      localStorage.setItem(TOKEN_KEY, fallbackToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(demoProfile.user));
+      return { success: true };
     }
 
     return { 
