@@ -14,6 +14,7 @@ export interface PendingApprovalRequest {
   studentName: string;
   rollNo: string;
   regNo: string;
+  department?: string;
   branch: string;
   year: string;
   semester: string;
@@ -51,8 +52,8 @@ interface SecurityContextType {
   isConnected: boolean;
   // Approvals Workflow State & Actions
   approvalRequests: PendingApprovalRequest[];
-  submitApprovalRequest: (request: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => void;
-  updateApprovalRequestStatus: (id: string, status: 'Approved' | 'Rejected') => void;
+  submitApprovalRequest: (request: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string; department?: string }) => void;
+  updateApprovalRequestStatus: (id: string, status: 'Approved' | 'Rejected', academicDetails?: { semester?: string; year?: string; section?: string; department?: string; branch?: string }) => void;
   deleteApprovalRequest: (id: string) => void;
   deleteUserProfile: (identifier: string) => void;
   // Actions
@@ -405,9 +406,22 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
                     return updated;
                   });
                 } else if (inner.action === 'UPDATE_STATUS') {
-                  const { id, status } = inner.data;
+                  const { id, status, academicDetails } = inner.data;
                   setApprovalRequests(prev => {
-                    const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+                    const updated = prev.map(r => {
+                      if (r.id === id) {
+                        return {
+                          ...r,
+                          status,
+                          ...(academicDetails?.semester ? { semester: academicDetails.semester } : {}),
+                          ...(academicDetails?.year ? { year: academicDetails.year } : {}),
+                          ...(academicDetails?.section ? { section: academicDetails.section } : {}),
+                          ...(academicDetails?.department ? { department: academicDetails.department } : {}),
+                          ...(academicDetails?.branch ? { branch: academicDetails.branch } : {})
+                        };
+                      }
+                      return r;
+                    });
                     try {
                       localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
                     } catch (e) {}
@@ -459,10 +473,27 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
     broadcastCloudSync('SUBMIT_REQUEST', formatted);
   };
 
-  const updateApprovalRequestStatus = (id: string, status: 'Approved' | 'Rejected') => {
+  const updateApprovalRequestStatus = (
+    id: string, 
+    status: 'Approved' | 'Rejected', 
+    academicDetails?: { semester?: string; year?: string; section?: string; department?: string; branch?: string }
+  ) => {
     setApprovalRequests(prev => {
       const targetReq = prev.find(r => r.id === id);
-      const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+      const updated = prev.map(r => {
+        if (r.id === id) {
+          return {
+            ...r,
+            status,
+            ...(academicDetails?.semester ? { semester: academicDetails.semester } : {}),
+            ...(academicDetails?.year ? { year: academicDetails.year } : {}),
+            ...(academicDetails?.section ? { section: academicDetails.section } : {}),
+            ...(academicDetails?.department ? { department: academicDetails.department } : {}),
+            ...(academicDetails?.branch ? { branch: academicDetails.branch } : {})
+          };
+        }
+        return r;
+      });
       try {
         localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
 
@@ -476,6 +507,13 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
           if (uIdx >= 0) {
             regList[uIdx].is_active = status === 'Approved' ? 1 : 0;
             regList[uIdx].approval_status = status;
+            if (academicDetails) {
+              if (academicDetails.semester) regList[uIdx].semester = academicDetails.semester;
+              if (academicDetails.year) regList[uIdx].year = academicDetails.year;
+              if (academicDetails.section) regList[uIdx].section = academicDetails.section;
+              if (academicDetails.department) regList[uIdx].department = academicDetails.department;
+              if (academicDetails.branch) regList[uIdx].branch = academicDetails.branch;
+            }
             localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
           }
         }
@@ -484,7 +522,7 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
 
     // Broadcast across devices
-    broadcastCloudSync('UPDATE_STATUS', { id, status });
+    broadcastCloudSync('UPDATE_STATUS', { id, status, academicDetails });
   };
 
   const deleteApprovalRequest = (id: string) => {

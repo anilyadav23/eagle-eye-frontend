@@ -37,11 +37,45 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
   const [filterSection, setFilterSection] = useState('A');
   const [filterSubject, setFilterSubject] = useState('DBMS');
 
+  // Academic allocation modal state for approving students
+  const [allocationModalReq, setAllocationModalReq] = useState<any | null>(null);
+  const [allocDepartment, setAllocDepartment] = useState('Computer Science & Engineering');
+  const [allocBranch, setAllocBranch] = useState('Computer Science & Engineering');
+  const [allocSemester, setAllocSemester] = useState('3rd Semester');
+  const [allocYear, setAllocYear] = useState('2nd Year');
+  const [allocSection, setAllocSection] = useState('Section A');
+
   // Shared reactive registration & clearance approvals queue
   const pendingRequests = approvalRequests;
 
+  const handleOpenApproveModal = (req: any) => {
+    setAllocationModalReq(req);
+    setAllocDepartment(req.department || 'Computer Science & Engineering');
+    setAllocBranch(req.branch || 'Computer Science & Engineering');
+    setAllocSemester(req.semester && req.semester !== 'Pending Allocation' ? req.semester : '3rd Semester');
+    setAllocYear(req.year && req.year !== 'Pending Allocation' ? req.year : '2nd Year');
+    setAllocSection(req.section && req.section !== 'Pending' ? req.section : 'Section A');
+  };
+
+  const handleConfirmApproval = () => {
+    if (!allocationModalReq) return;
+    updateApprovalRequestStatus(allocationModalReq.id, 'Approved', {
+      department: allocDepartment,
+      branch: allocBranch,
+      semester: allocSemester,
+      year: allocYear,
+      section: allocSection
+    });
+    setAllocationModalReq(null);
+  };
+
   const handleApprove = (id: string) => {
-    updateApprovalRequestStatus(id, 'Approved');
+    const target = pendingRequests.find(r => r.id === id);
+    if (target) {
+      handleOpenApproveModal(target);
+    } else {
+      updateApprovalRequestStatus(id, 'Approved');
+    }
   };
 
   const handleReject = (id: string) => {
@@ -433,6 +467,143 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Academic Allocation & Approval Modal */}
+      {allocationModalReq && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  Approve Student & Allocate Academic Program
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Assign branch, department, year, semester, and section to activate student subjects
+                </p>
+              </div>
+              <button
+                onClick={() => setAllocationModalReq(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Student Name:</span>
+                <span className="text-white font-bold">{allocationModalReq.studentName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Roll / Username:</span>
+                <span className="text-sky-300 font-mono font-bold">{allocationModalReq.rollNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Official Email:</span>
+                <span className="text-slate-300 font-mono">{allocationModalReq.email}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono font-semibold block mb-1">Department</label>
+                  <select
+                    value={allocDepartment}
+                    onChange={(e) => setAllocDepartment(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
+                  >
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Communication</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Electrical Engineering">Electrical Engineering</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono font-semibold block mb-1">Branch</label>
+                  <select
+                    value={allocBranch}
+                    onChange={(e) => setAllocBranch(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
+                  >
+                    <option value="Computer Science & Engineering">Computer Science (CSE)</option>
+                    <option value="AI & Data Science">AI & Data Science (AIDS)</option>
+                    <option value="Information Technology">Information Technology (IT)</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
+                    <option value="Mechanical Engineering">Mechanical (ME)</option>
+                    <option value="Civil Engineering">Civil (CE)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-300 font-mono font-semibold block mb-1">Academic Year</label>
+                  <select
+                    value={allocYear}
+                    onChange={(e) => setAllocYear(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
+                  >
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono font-semibold block mb-1">Semester</label>
+                  <select
+                    value={allocSemester}
+                    onChange={(e) => setAllocSemester(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
+                  >
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester">2nd Semester</option>
+                    <option value="3rd Semester">3rd Semester</option>
+                    <option value="4th Semester">4th Semester</option>
+                    <option value="5th Semester">5th Semester</option>
+                    <option value="6th Semester">6th Semester</option>
+                    <option value="7th Semester">7th Semester</option>
+                    <option value="8th Semester">8th Semester</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-300 font-mono font-semibold block mb-1">Section</label>
+                  <select
+                    value={allocSection}
+                    onChange={(e) => setAllocSection(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
+                  >
+                    <option value="Section A">Section A</option>
+                    <option value="Section B">Section B</option>
+                    <option value="Section C">Section C</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setAllocationModalReq(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmApproval}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Authorize & Activate Student</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,27 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   full_name: string;
+  department?: string;
+  branch?: string;
+  semester?: string;
+  year?: string;
+  section?: string;
+  phone?: string;
+  hostel?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  mentor?: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  full_name?: string;
+  department?: string;
+  branch?: string;
+  phone?: string;
 }
 
 interface AuthContextType {
@@ -17,8 +38,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (payload: { username: string; email: string; password: string; role: UserRole; full_name?: string }) => Promise<{ success: boolean; error?: string; message?: string }>;
+  register: (payload: RegisterPayload) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => void;
+  updateCurrentUserProfile?: (updates: Partial<AuthUser>) => void;
   switchRoleDemo?: (role: UserRole) => void;
 }
 
@@ -118,7 +140,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               username: foundUser.username,
               email: foundUser.email,
               role: foundUser.role,
-              full_name: foundUser.full_name || foundUser.username
+              full_name: foundUser.full_name || foundUser.username,
+              department: (foundUser as any).department,
+              branch: (foundUser as any).branch,
+              semester: (foundUser as any).semester,
+              year: (foundUser as any).year,
+              section: (foundUser as any).section,
+              phone: (foundUser as any).phone,
+              hostel: (foundUser as any).hostel,
+              bloodGroup: (foundUser as any).bloodGroup,
+              emergencyContact: (foundUser as any).emergencyContact,
+              mentor: (foundUser as any).mentor
             };
             setToken(registeredToken);
             setUser(authObj);
@@ -142,6 +174,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Update foundUser record to active so future lookups are immediate
             (foundUser as any).is_active = 1;
             (foundUser as any).approval_status = 'Approved';
+            if (matchingReq.department) (foundUser as any).department = matchingReq.department;
+            if (matchingReq.branch) (foundUser as any).branch = matchingReq.branch;
+            if (matchingReq.semester) (foundUser as any).semester = matchingReq.semester;
+            if (matchingReq.year) (foundUser as any).year = matchingReq.year;
+            if (matchingReq.section) (foundUser as any).section = matchingReq.section;
+
             try {
               localStorage.setItem('eagle_eye_registered_users', JSON.stringify(registeredUsers));
             } catch (e) {}
@@ -152,7 +190,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               username: foundUser.username,
               email: foundUser.email,
               role: foundUser.role,
-              full_name: foundUser.full_name || foundUser.username
+              full_name: foundUser.full_name || foundUser.username,
+              department: (foundUser as any).department || matchingReq.department,
+              branch: (foundUser as any).branch || matchingReq.branch,
+              semester: (foundUser as any).semester || matchingReq.semester,
+              year: (foundUser as any).year || matchingReq.year,
+              section: (foundUser as any).section || matchingReq.section,
+              phone: (foundUser as any).phone || matchingReq.mobile,
+              hostel: (foundUser as any).hostel,
+              bloodGroup: (foundUser as any).bloodGroup,
+              emergencyContact: (foundUser as any).emergencyContact,
+              mentor: (foundUser as any).mentor
             };
             setToken(registeredToken);
             setUser(authObj);
@@ -229,7 +277,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   };
 
-  const register = async (payload: { username: string; email: string; password: string; role: UserRole; full_name?: string }): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const register = async (payload: RegisterPayload): Promise<{ success: boolean; error?: string; message?: string }> => {
     const cleanUname = payload.username.trim().toLowerCase();
     const cleanMail = payload.email.trim().toLowerCase();
 
@@ -246,13 +294,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
 
       const userId = existingIdx >= 0 ? regList[existingIdx].id : `usr-${Date.now()}`;
-      const userRecord = {
+      const userRecord: AuthUser & { password?: string; is_active?: number; approval_status?: string } = {
         id: userId,
         username: payload.username.trim(),
         email: payload.email.trim(),
         password: payload.password,
         role: payload.role,
-        full_name: payload.full_name?.trim() || payload.username.trim()
+        full_name: payload.full_name?.trim() || payload.username.trim(),
+        department: payload.department || 'Computer Science & Engineering',
+        branch: payload.branch || 'Computer Science & Engineering',
+        semester: 'Semester Pending Assignment',
+        year: 'Year Pending Assignment',
+        section: 'Sec Pending',
+        phone: payload.phone || '+91 98000 00000',
+        hostel: 'Day Scholar / Not Assigned',
+        bloodGroup: 'Not Specified',
+        emergencyContact: 'Not Specified',
+        mentor: 'Pending HOD/Teacher Allocation',
+        is_active: payload.role === 'Student' ? 0 : 1,
+        approval_status: payload.role === 'Student' ? 'Pending' : 'Approved'
       };
 
       if (existingIdx >= 0) {
@@ -273,12 +333,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         studentName: payload.full_name?.trim() || payload.username.trim(),
         rollNo: payload.username.trim(),
         regNo: `REG-${Math.floor(100000 + Math.random() * 900000)}`,
-        branch: 'Electronics & Communication',
-        year: '1st Year',
-        semester: 'Semester 1',
-        section: 'A',
+        department: payload.department || 'Computer Science & Engineering',
+        branch: payload.branch || 'Computer Science & Engineering',
+        year: 'Pending Allocation',
+        semester: 'Pending Allocation',
+        section: 'Pending',
         email: payload.email.trim(),
-        mobile: '+91 98765 00000',
+        mobile: payload.phone || '+91 98000 00000',
         submittedAt: 'Just now',
         photos: [
           'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'
@@ -336,8 +397,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem(USER_KEY);
   };
 
+  const updateCurrentUserProfile = (updates: Partial<AuthUser>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem(USER_KEY, JSON.stringify(updated));
+        // Also update in registered_users
+        const regList: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+        const uIdx = regList.findIndex(u => u.id === updated.id || u.username.toLowerCase() === updated.username.toLowerCase());
+        if (uIdx >= 0) {
+          regList[uIdx] = { ...regList[uIdx], ...updates };
+          localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
+        }
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user, isLoading, login, register, logout, updateCurrentUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

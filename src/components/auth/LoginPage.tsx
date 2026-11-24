@@ -19,6 +19,9 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regDepartment, setRegDepartment] = useState('Computer Science & Engineering');
+  const [regBranch, setRegBranch] = useState('Computer Science & Engineering');
   const [regRole, setRegRole] = useState<'Student' | 'Teacher'>('Student');
   const [regSuccessMsg, setRegSuccessMsg] = useState<string | null>(null);
 
@@ -51,7 +54,10 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
       email: regEmail.trim(),
       password: regPassword,
       role: regRole,
-      full_name: regFullName.trim()
+      full_name: regFullName.trim(),
+      department: regDepartment.trim(),
+      branch: regBranch.trim(),
+      phone: regPhone.trim()
     });
 
     setLoading(false);
@@ -258,16 +264,72 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Create Password</label>
-                <input
-                  type="password"
-                  required
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Enter secure password"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
-                />
+              {/* Department & Branch Separate Fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Department</label>
+                  <select
+                    value={regDepartment}
+                    onChange={(e) => {
+                      setRegDepartment(e.target.value);
+                      if (e.target.value === 'Electronics & Communication Engineering') {
+                        setRegBranch('Electronics & Communication Engineering');
+                      } else if (e.target.value === 'Mechanical Engineering') {
+                        setRegBranch('Mechanical Engineering');
+                      } else if (e.target.value === 'Civil Engineering') {
+                        setRegBranch('Civil Engineering');
+                      } else {
+                        setRegBranch('Computer Science & Engineering');
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                  >
+                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Communication</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Electrical Engineering">Electrical Engineering</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Branch</label>
+                  <select
+                    value={regBranch}
+                    onChange={(e) => setRegBranch(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                  >
+                    <option value="Computer Science & Engineering">Computer Science (CSE)</option>
+                    <option value="AI & Data Science">AI & Data Science (AIDS)</option>
+                    <option value="Information Technology">Information Technology (IT)</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
+                    <option value="Mechanical Engineering">Mechanical (ME)</option>
+                    <option value="Civil Engineering">Civil (CE)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Create Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="Enter secure password"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                  />
+                </div>
               </div>
 
               <div className="pt-2">
