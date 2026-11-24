@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, ShieldCheck, Eye, Bell, Volume2, VolumeX, 
   Lock, AlertTriangle, UserPlus, Radio, Activity, RefreshCw,
-  Database, Cpu, CheckCircle2, Laptop 
+  Database, Cpu, CheckCircle2, Laptop, LogOut, User 
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const Header: React.FC = () => {
   const { 
@@ -12,6 +13,7 @@ export const Header: React.FC = () => {
     toggleLockdown, triggerUnknownPersonPrompt, isConnected,
     simulateAlert, setIsConnectCamModalOpen, connectLaptopWebcam
   } = useSecurity();
+  const { user, logout } = useAuth();
 
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
@@ -43,6 +45,9 @@ export const Header: React.FC = () => {
     }
   };
 
+  const role = user?.role || 'Admin';
+  const isSuperUser = role === 'Admin' || role === 'Guard' || role === 'HOD';
+
   return (
     <header className={`h-16 px-5 border-b z-40 transition-colors duration-300 flex items-center justify-between ${
       isLockdownMode 
@@ -61,11 +66,13 @@ export const Header: React.FC = () => {
                 EAGLE EYE <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono font-normal">SMART CLASS AI</span>
               </h1>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium tracking-wide">Smart Class Attendance & Activity Intelligence</p>
+            <p className="text-[11px] text-slate-400 font-medium tracking-wide">
+              Smart Class Attendance & Activity Intelligence • <span className="text-sky-400 font-bold">{role} Mode</span>
+            </p>
           </div>
         </div>
 
-        {/* Live Engine & Database Status Badges */}
+        {/* Live Engine Status Badges */}
         <div className="hidden lg:flex items-center space-x-2 pl-3 border-l border-slate-800">
           <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800">
             <span className="flex h-2 w-2 relative">
@@ -83,22 +90,24 @@ export const Header: React.FC = () => {
 
           <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800">
             <Database className="w-3 h-3 text-sky-400" />
-            <span className="text-[11px] font-mono text-slate-300">SQLite DB: Synced</span>
+            <span className="text-[11px] font-mono text-slate-300">DB: Synced</span>
           </div>
         </div>
       </div>
 
       {/* Action Controls */}
       <div className="flex items-center space-x-2.5">
-        {/* 1-Click Laptop Webcam Trigger */}
-        <button
-          onClick={handleQuickWebcam}
-          title="Connect Built-in Laptop Webcam for Live Testing"
-          className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium flex items-center space-x-1.5 transition-all"
-        >
-          <Laptop className="w-3.5 h-3.5 text-sky-400" />
-          <span className="hidden sm:inline">{webcamFeedback || 'Laptop Cam'}</span>
-        </button>
+        {/* Webcam Trigger - Available to Faculty & Admins */}
+        {isSuperUser && (
+          <button
+            onClick={handleQuickWebcam}
+            title="Connect Built-in Laptop Webcam for Live Testing"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium flex items-center space-x-1.5 transition-all"
+          >
+            <Laptop className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">{webcamFeedback || 'Laptop Cam'}</span>
+          </button>
+        )}
 
         {/* Real-time Clock */}
         <div className="hidden md:flex flex-col items-end pr-2.5 border-r border-slate-800 font-mono">
@@ -106,70 +115,65 @@ export const Header: React.FC = () => {
           <span className="text-[9px] text-slate-400">{currentDate}</span>
         </div>
 
-        {/* Test Security Rules Menu */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowSimMenu(!showSimMenu)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800 text-xs font-medium flex items-center space-x-1.5 transition-all"
-          >
-            <Activity className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden sm:inline">Test Rules</span>
-          </button>
+        {/* Test Security Rules Menu - Superusers only */}
+        {isSuperUser && (
+          <div className="relative">
+            <button 
+              onClick={() => setShowSimMenu(!showSimMenu)}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800 text-xs font-medium flex items-center space-x-1.5 transition-all"
+            >
+              <Activity className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline">Test Rules</span>
+            </button>
 
-          {showSimMenu && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50 text-xs space-y-1">
-              <div className="px-2 py-1 font-semibold text-slate-400 border-b border-slate-800 text-[10px] uppercase">
-                Trigger Real-Time AI Rule Test:
+            {showSimMenu && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-2 z-50 text-xs space-y-1">
+                <div className="px-2 py-1 font-semibold text-slate-400 border-b border-slate-800 text-[10px] uppercase">
+                  Trigger Real-Time AI Rule Test:
+                </div>
+                <button 
+                  onClick={() => { simulateAlert('Unauthorized Access', 'Server Room'); setShowSimMenu(false); }}
+                  className="w-full text-left px-2 py-2 rounded-lg hover:bg-red-950/60 text-red-300 flex items-center space-x-2"
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>Server Room Intrusion (Critical)</span>
+                </button>
+                <button 
+                  onClick={() => { simulateAlert('Tailgating Detected', 'Main Entrance'); setShowSimMenu(false); }}
+                  className="w-full text-left px-2 py-2 rounded-lg hover:bg-amber-950/60 text-amber-300 flex items-center space-x-2"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <span>Tailgating at Turnstile (High)</span>
+                </button>
+                <button 
+                  onClick={() => { simulateAlert('Loitering Detected', 'Corridor North'); setShowSimMenu(false); }}
+                  className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-800 text-slate-300 flex items-center space-x-2"
+                >
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span>Loitering in Corridor (Medium)</span>
+                </button>
+                <button 
+                  onClick={() => { triggerUnknownPersonPrompt(); setShowSimMenu(false); }}
+                  className="w-full text-left px-2 py-2 rounded-lg hover:bg-purple-950/60 text-purple-300 flex items-center space-x-2 border-t border-slate-800 mt-1"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Simulate Unknown Person Entry</span>
+                </button>
               </div>
-              <button 
-                onClick={() => { simulateAlert('Unauthorized Access', 'Server Room'); setShowSimMenu(false); }}
-                className="w-full text-left px-2 py-2 rounded-lg hover:bg-red-950/60 text-red-300 flex items-center space-x-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                <span>Server Room Intrusion (Critical)</span>
-              </button>
-              <button 
-                onClick={() => { simulateAlert('Tailgating Detected', 'Main Entrance'); setShowSimMenu(false); }}
-                className="w-full text-left px-2 py-2 rounded-lg hover:bg-amber-950/60 text-amber-300 flex items-center space-x-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span>Tailgating at Turnstile (High)</span>
-              </button>
-              <button 
-                onClick={() => { simulateAlert('Loitering Detected', 'Corridor North'); setShowSimMenu(false); }}
-                className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-800 text-slate-300 flex items-center space-x-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span>Loitering in Corridor (Medium)</span>
-              </button>
-              <button 
-                onClick={() => { triggerUnknownPersonPrompt(); setShowSimMenu(false); }}
-                className="w-full text-left px-2 py-2 rounded-lg hover:bg-purple-950/60 text-purple-300 flex items-center space-x-2 border-t border-slate-800 mt-1"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-purple-400" />
-                <span>Simulate Unknown Person Entry</span>
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Connect Real Camera Button */}
-        <button
-          onClick={() => setIsConnectCamModalOpen(true)}
-          className="px-3 py-1.5 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-indigo-600/20 transition-all"
-        >
-          <Radio className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Connect Cam</span>
-        </button>
-
-        {/* Enroll Button */}
-        <button
-          onClick={() => triggerUnknownPersonPrompt()}
-          className="px-3 py-1.5 rounded-xl bg-sky-600/90 hover:bg-sky-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-sky-600/20 transition-all"
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Enroll Visitor</span>
-        </button>
+        {role === 'Admin' && (
+          <button
+            onClick={() => setIsConnectCamModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-indigo-600/20 transition-all"
+          >
+            <Radio className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Connect Cam</span>
+          </button>
+        )}
 
         {/* Sound Toggle */}
         <button
@@ -184,18 +188,22 @@ export const Header: React.FC = () => {
           {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
 
-        {/* Emergency Facility Lockdown Toggle */}
-        <button
-          onClick={toggleLockdown}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 border transition-all ${
-            isLockdownMode
-              ? 'bg-red-600 text-white border-red-400 shadow-lg shadow-red-600/50 animate-pulse'
-              : 'bg-red-950/40 text-red-400 border-red-800/60 hover:bg-red-900/50'
-          }`}
-        >
-          <Lock className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{isLockdownMode ? 'CANCEL LOCKDOWN' : 'LOCKDOWN'}</span>
-        </button>
+        {/* User Identity / Logout Pill */}
+        <div className="flex items-center pl-2 border-l border-slate-800 space-x-2">
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-xs font-bold text-slate-200">{user?.full_name || user?.username}</span>
+            <span className="text-[10px] font-mono text-sky-400 font-semibold">{role}</span>
+          </div>
+
+          <button
+            onClick={logout}
+            title="Log out from session"
+            className="px-2.5 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 text-xs font-semibold flex items-center space-x-1.5 transition-all"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Sign Out</span>
+          </button>
+        </div>
       </div>
     </header>
   );

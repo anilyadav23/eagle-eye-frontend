@@ -48,10 +48,32 @@ export type BlueprintType = 'SVG' | 'Image' | 'PDF' | 'Custom Drawn';
 
 export type ShapeType = 'RECT' | 'POLYGON' | 'WALL_LINE' | 'DOOR' | 'CAMERA_NODE' | 'TEXT_LABEL' | 'FREEHAND';
 
+export type NavTab = 
+  | 'dashboard' 
+  | 'hod'
+  | 'teacher'
+  | 'student'
+  | 'attendance'
+  | 'timetable'
+  | 'registration'
+  | 'map' 
+  | 'blueprint'
+  | 'tracking' 
+  | 'appearance' 
+  | 'enrollment' 
+  | 'rules' 
+  | 'cameras' 
+  | 'aiops'
+  | 'analytics';
+
+export * from './academic';
+
+
 export type PersonaRole = 'owner' | 'engineer' | 'security' | 'operator' | 'designer' | 'visitor';
 
 export interface PersonaConfig {
   id: PersonaRole;
+
   title: string;
   badge: string;
   color: string;
