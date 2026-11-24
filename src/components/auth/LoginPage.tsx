@@ -298,10 +298,11 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                     onChange={(e) => setRegBranch(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
                   >
+                    <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
                     <option value="Computer Science & Engineering">Computer Science (CSE)</option>
                     <option value="AI & Data Science">AI & Data Science (AIDS)</option>
                     <option value="Information Technology">Information Technology (IT)</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
                     <option value="Mechanical Engineering">Mechanical (ME)</option>
                     <option value="Civil Engineering">Civil (CE)</option>
                   </select>

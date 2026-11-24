@@ -39,8 +39,8 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
 
   // Academic allocation modal state for approving students
   const [allocationModalReq, setAllocationModalReq] = useState<any | null>(null);
-  const [allocDepartment, setAllocDepartment] = useState('Computer Science & Engineering');
-  const [allocBranch, setAllocBranch] = useState('Computer Science & Engineering');
+  const [allocDepartment, setAllocDepartment] = useState('Electronics & Communication Engineering');
+  const [allocBranch, setAllocBranch] = useState('Electronics & Computer Control (ECC)');
   const [allocSemester, setAllocSemester] = useState('3rd Semester');
   const [allocYear, setAllocYear] = useState('2nd Year');
   const [allocSection, setAllocSection] = useState('Section A');
@@ -50,8 +50,8 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
 
   const handleOpenApproveModal = (req: any) => {
     setAllocationModalReq(req);
-    setAllocDepartment(req.department || 'Computer Science & Engineering');
-    setAllocBranch(req.branch || 'Computer Science & Engineering');
+    setAllocDepartment(req.department || 'Electronics & Communication Engineering');
+    setAllocBranch(req.branch || 'Electronics & Computer Control (ECC)');
     setAllocSemester(req.semester && req.semester !== 'Pending Allocation' ? req.semester : '3rd Semester');
     setAllocYear(req.year && req.year !== 'Pending Allocation' ? req.year : '2nd Year');
     setAllocSection(req.section && req.section !== 'Pending' ? req.section : 'Section A');
@@ -531,10 +531,11 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
                     onChange={(e) => setAllocBranch(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
                   >
+                    <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
                     <option value="Computer Science & Engineering">Computer Science (CSE)</option>
                     <option value="AI & Data Science">AI & Data Science (AIDS)</option>
                     <option value="Information Technology">Information Technology (IT)</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
                     <option value="Mechanical Engineering">Mechanical (ME)</option>
                     <option value="Civil Engineering">Civil (CE)</option>
                   </select>

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
+import { MASTER_BRANCH_SUBJECT_CATALOG, ECC_SUBJECT_CATALOG } from '../../data/syllabusCatalog';
 
 interface AttendanceLogEntry {
   date: string;
@@ -19,65 +20,6 @@ interface AttendanceLogEntry {
   status: 'Present' | 'Absent';
   verification: 'Facial AI Match' | 'Biometric QR' | 'Manual Override';
 }
-
-// Branch & Semester Subject Mapping Catalog
-const BRANCH_SUBJECT_CATALOG: Record<string, Record<string, Array<{ code: string; name: string; color: string }>>> = {
-  'Computer Science & Engineering': {
-    '1st Semester': [
-      { code: 'CS101', name: 'Programming Fundamentals in C', color: 'sky' },
-      { code: 'MA101', name: 'Engineering Mathematics I', color: 'indigo' },
-      { code: 'PH101', name: 'Engineering Physics', color: 'emerald' },
-      { code: 'CS102', name: 'Digital Logic & Design', color: 'amber' }
-    ],
-    '2nd Semester': [
-      { code: 'CS201', name: 'Object Oriented Programming (C++)', color: 'sky' },
-      { code: 'MA201', name: 'Engineering Mathematics II', color: 'indigo' },
-      { code: 'CS202', name: 'Discrete Mathematical Structures', color: 'emerald' },
-      { code: 'CS203', name: 'Data Structures & Algorithms Basics', color: 'amber' }
-    ],
-    '3rd Semester': [
-      { code: 'CS301', name: 'Computer Vision & AI', color: 'emerald' },
-      { code: 'CS302', name: 'Database Systems', color: 'sky' },
-      { code: 'CS303', name: 'Operating Systems', color: 'amber' },
-      { code: 'CS304', name: 'Computer Networks', color: 'emerald' },
-      { code: 'CS305', name: 'Data Structures & Algorithms', color: 'purple' }
-    ],
-    '4th Semester': [
-      { code: 'CS401', name: 'Theory of Computation', color: 'indigo' },
-      { code: 'CS402', name: 'Design & Analysis of Algorithms', color: 'emerald' },
-      { code: 'CS403', name: 'Software Engineering', color: 'sky' },
-      { code: 'CS404', name: 'Microprocessors & Interfacing', color: 'amber' }
-    ],
-    '5th Semester': [
-      { code: 'CS501', name: 'Artificial Intelligence & Deep Learning', color: 'emerald' },
-      { code: 'CS502', name: 'Compiler Design', color: 'indigo' },
-      { code: 'CS503', name: 'Information & Network Security', color: 'red' },
-      { code: 'CS504', name: 'Cloud Computing Architecture', color: 'sky' },
-      { code: 'CS505', name: 'Big Data Engineering', color: 'purple' }
-    ]
-  },
-  'Electronics & Communication Engineering': {
-    '3rd Semester': [
-      { code: 'EC301', name: 'Signals & Systems', color: 'sky' },
-      { code: 'EC302', name: 'Digital Circuit Design', color: 'emerald' },
-      { code: 'EC303', name: 'Microprocessors & Microcontrollers', color: 'amber' },
-      { code: 'EC304', name: 'Electromagnetic Field Theory', color: 'indigo' }
-    ],
-    '5th Semester': [
-      { code: 'EC501', name: 'VLSI Design & Technology', color: 'emerald' },
-      { code: 'EC502', name: 'Digital Signal Processing', color: 'sky' },
-      { code: 'EC503', name: 'Antenna & Wave Propagation', color: 'amber' }
-    ]
-  },
-  'Mechanical Engineering': {
-    '3rd Semester': [
-      { code: 'ME301', name: 'Engineering Thermodynamics', color: 'amber' },
-      { code: 'ME302', name: 'Fluid Mechanics & Hydraulic Machines', color: 'sky' },
-      { code: 'ME303', name: 'Kinematics of Machines', color: 'emerald' },
-      { code: 'ME304', name: 'Manufacturing Processes', color: 'indigo' }
-    ]
-  }
-};
 
 export const StudentDedicatedDashboard: React.FC = () => {
   const { user, updateCurrentUserProfile } = useAuth();
@@ -134,18 +76,20 @@ export const StudentDedicatedDashboard: React.FC = () => {
   };
 
   // Dynamically resolve student subjects based on their allocated Department/Branch & Semester
-  const defaultCsSubjects = [
-    { code: 'CS301', name: 'Computer Vision & AI', color: 'emerald' },
-    { code: 'CS302', name: 'Database Systems', color: 'sky' },
-    { code: 'CS303', name: 'Operating Systems', color: 'amber' },
-    { code: 'CS304', name: 'Computer Networks', color: 'emerald' },
-    { code: 'CS305', name: 'Data Structures & Algorithms', color: 'purple' }
-  ];
+  // Defaults directly to official ECC Curriculum if branch is ECC/ECE or fallback to 3rd Semester ECC
+  const isEccOrEce = 
+    studentBranch.toLowerCase().includes('ecc') || 
+    studentBranch.toLowerCase().includes('ece') || 
+    studentBranch.toLowerCase().includes('electronics') ||
+    studentDepartment.toLowerCase().includes('electronics') ||
+    studentDepartment.toLowerCase().includes('ecc');
 
   const assignedSubjectList = 
-    BRANCH_SUBJECT_CATALOG[studentBranch]?.[studentSemester] ||
-    BRANCH_SUBJECT_CATALOG[studentDepartment]?.[studentSemester] ||
-    defaultCsSubjects;
+    MASTER_BRANCH_SUBJECT_CATALOG[studentBranch]?.[studentSemester] ||
+    MASTER_BRANCH_SUBJECT_CATALOG[studentDepartment]?.[studentSemester] ||
+    (isEccOrEce ? ECC_SUBJECT_CATALOG[studentSemester] || ECC_SUBJECT_CATALOG['3rd Semester'] : null) ||
+    ECC_SUBJECT_CATALOG[studentSemester] ||
+    ECC_SUBJECT_CATALOG['3rd Semester'];
 
   // Real Official Attendance Records from Faculty & Camera Roll Calls
   const studentOfficialAttendanceRecords = attendanceRecords.filter(

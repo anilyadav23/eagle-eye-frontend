@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
+import { ECC_SUBJECT_CATALOG } from '../../data/syllabusCatalog';
 
 interface StudentExamMark {
   examName: string;
@@ -32,9 +33,13 @@ export const TeacherDedicatedDashboard: React.FC = () => {
   
   // Class state
   const [classType, setClassType] = useState<'Regular Class' | 'Extra Class' | 'Combined Class' | 'Substitute'>('Regular Class');
-  const [activeRoom, setActiveRoom] = useState('Lecture Hall 101 - CS301');
+  const [activeRoom, setActiveRoom] = useState('Lecture Hall 101 - ECC');
   const [isAttendanceFinalized, setIsAttendanceFinalized] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState('CS301 - Computer Vision & AI');
+  const [selectedSemester, setSelectedSemester] = useState('3rd Semester');
+  const [selectedSubject, setSelectedSubject] = useState('3ECC41A(ECE) - Advanced Engineering Mathematics-I');
+
+  // Dynamic subjects based on selected semester
+  const teacherSemesterSubjects = ECC_SUBJECT_CATALOG[selectedSemester] || ECC_SUBJECT_CATALOG['3rd Semester'];
 
   // Dynamic Teacher-Configured Exams (test name and max marks are decided by teacher)
   const [availableExams, setAvailableExams] = useState<Array<{ id: string; name: string; maxMarks: number }>>(() => {
@@ -318,15 +323,37 @@ export const TeacherDedicatedDashboard: React.FC = () => {
           <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
               <div>
-                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">Active Subject</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">Semester</span>
+                <select
+                  value={selectedSemester}
+                  onChange={(e) => {
+                    const newSem = e.target.value;
+                    setSelectedSemester(newSem);
+                    const subs = ECC_SUBJECT_CATALOG[newSem] || [];
+                    if (subs.length > 0) {
+                      setSelectedSubject(`${subs[0].code} - ${subs[0].name}`);
+                    }
+                  }}
+                  className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
+                >
+                  {Object.keys(ECC_SUBJECT_CATALOG).map(sem => (
+                    <option key={sem} value={sem}>{sem}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">ECC Active Course / Subject</span>
                 <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
+                  className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none max-w-[280px]"
                 >
-                  <option value="CS301 - Computer Vision & AI">CS301 - Computer Vision & AI</option>
-                  <option value="CS302 - Database Systems">CS302 - Database Systems</option>
-                  <option value="CS305 - Data Structures & Algorithms">CS305 - Data Structures & Algorithms</option>
+                  {teacherSemesterSubjects.map(sub => (
+                    <option key={sub.code} value={`${sub.code} - ${sub.name}`}>
+                      {sub.code} - {sub.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
