@@ -52,35 +52,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   // Standalone fallback demo credentials when running on static hosts without live backend API
-  const DEMO_FALLBACK_USERS: Record<string, { pass: string; user: AuthUser }> = {
+  const DEMO_FALLBACK_USERS: Record<string, { pass: string[]; user: AuthUser }> = {
     hodecc: {
-      pass: 'Anil@2026',
+      pass: ['Anil@2026', 'anil@2026', 'hod123'],
+      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
+    },
+    ecehod: {
+      pass: ['Anil@2026', 'anil@2026', 'hod123'],
       user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
     },
     hod: {
-      pass: 'Anil@2026',
+      pass: ['Anil@2026', 'anil@2026', 'hod123'],
       user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
     },
     teacher: {
-      pass: 'teacher123',
+      pass: ['teacher123'],
       user: { id: 'usr-tch', username: 'teacher', email: 'prof.ananya@campus.edu', role: 'Teacher', full_name: 'Prof. Ananya Sen' }
     },
     student: {
-      pass: 'student123',
+      pass: ['student123'],
       user: { id: 'usr-std', username: 'student', email: 'rohit.kumar@student.campus.edu', role: 'Student', full_name: 'Rohit Kumar (CS-22-049)' }
     },
     admin: {
-      pass: 'admin123',
+      pass: ['admin123'],
       user: { id: 'usr-adm', username: 'admin', email: 'admin@campus.edu', role: 'Admin', full_name: 'System Administrator' }
     },
     guard: {
-      pass: 'guard123',
+      pass: ['guard123'],
       user: { id: 'usr-grd', username: 'guard', email: 'gate1.security@campus.edu', role: 'Guard', full_name: 'Main Gate Control Desk' }
     }
   };
 
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password.trim();
     
     // Check fallback demo users if username matches standard demo profiles
     const demoProfile = DEMO_FALLBACK_USERS[cleanUser];
@@ -115,7 +120,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     // Seamless offline/standalone demo authentication fallback
-    if (demoProfile && demoProfile.pass === password) {
+    // Matches if username is hodecc, hod, ecehod, teacher, student, admin, or guard
+    if (demoProfile && demoProfile.pass.some(p => p.toLowerCase() === cleanPass.toLowerCase() || p === password)) {
       const fallbackToken = `demo-token-${cleanUser}-${Date.now()}`;
       setToken(fallbackToken);
       setUser(demoProfile.user);
