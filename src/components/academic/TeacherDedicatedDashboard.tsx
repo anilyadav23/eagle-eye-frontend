@@ -2,17 +2,27 @@ import React, { useState } from 'react';
 import { 
   UserCheck2, GraduationCap, Video, CheckCircle2, AlertTriangle, 
   Clock, Plus, Users, Edit3, Send, Download, FileText, Check, 
-  X, RefreshCw, Eye, Calendar, BookOpen, Layers
+  X, RefreshCw, Eye, Calendar, BookOpen, Layers, Award, BarChart3,
+  Mail, Phone, ShieldCheck
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
 
+interface StudentExamMark {
+  examName: string;
+  marks: number;
+  maxMarks: number;
+}
+
 interface StudentMarks {
   rollNo: string;
   name: string;
-  unitTest1: number;
-  midterm: number;
+  email?: string;
+  phone?: string;
+  department?: string;
+  semester?: string;
   attendancePct: number;
+  exams: Record<string, { marks: number; maxMarks: number }>;
 }
 
 export const TeacherDedicatedDashboard: React.FC = () => {
@@ -26,18 +36,78 @@ export const TeacherDedicatedDashboard: React.FC = () => {
   const [isAttendanceFinalized, setIsAttendanceFinalized] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('CS301 - Computer Vision & AI');
 
-  // Test Marks State & Modal
+  // Exam Selection for table view
+  const availableExams = [
+    { id: 'unitTest1', name: 'Unit Test 1', maxMarks: 25 },
+    { id: 'unitTest2', name: 'Unit Test 2', maxMarks: 25 },
+    { id: 'midterm', name: 'Midterm Exam', maxMarks: 50 },
+    { id: 'practical', name: 'Lab Practical & Viva', maxMarks: 30 },
+    { id: 'semesterFinal', name: 'End Semester Exam', maxMarks: 100 }
+  ];
+  const [selectedExamId, setSelectedExamId] = useState<string>('unitTest1');
+
+  // Test Marks State
   const [marksData, setMarksData] = useState<StudentMarks[]>([
-    { rollNo: '22CS001', name: 'Aarya Sharma', unitTest1: 23, midterm: 46, attendancePct: 92 },
-    { rollNo: '22CS002', name: 'Rohan Mehta', unitTest1: 21, midterm: 42, attendancePct: 86 },
-    { rollNo: '22CS003', name: 'Neha Singh', unitTest1: 18, midterm: 34, attendancePct: 76 }
+    { 
+      rollNo: '22CS001', 
+      name: 'Aarya Sharma', 
+      email: 'aarya.sharma@campus.edu',
+      phone: '+91 98765 43210',
+      department: 'Computer Science & Engineering',
+      semester: 'Semester 5',
+      attendancePct: 92,
+      exams: {
+        unitTest1: { marks: 23, maxMarks: 25 },
+        unitTest2: { marks: 24, maxMarks: 25 },
+        midterm: { marks: 46, maxMarks: 50 },
+        practical: { marks: 28, maxMarks: 30 },
+        semesterFinal: { marks: 91, maxMarks: 100 }
+      }
+    },
+    { 
+      rollNo: '22CS002', 
+      name: 'Rohan Mehta', 
+      email: 'rohan.mehta@campus.edu',
+      phone: '+91 98112 23344',
+      department: 'Computer Science & Engineering',
+      semester: 'Semester 5',
+      attendancePct: 86,
+      exams: {
+        unitTest1: { marks: 21, maxMarks: 25 },
+        unitTest2: { marks: 19, maxMarks: 25 },
+        midterm: { marks: 42, maxMarks: 50 },
+        practical: { marks: 26, maxMarks: 30 },
+        semesterFinal: { marks: 84, maxMarks: 100 }
+      }
+    },
+    { 
+      rollNo: '22CS003', 
+      name: 'Neha Singh', 
+      email: 'neha.singh@campus.edu',
+      phone: '+91 98445 56677',
+      department: 'Computer Science & Engineering',
+      semester: 'Semester 5',
+      attendancePct: 76,
+      exams: {
+        unitTest1: { marks: 18, maxMarks: 25 },
+        unitTest2: { marks: 17, maxMarks: 25 },
+        midterm: { marks: 34, maxMarks: 50 },
+        practical: { marks: 22, maxMarks: 30 },
+        semesterFinal: { marks: 71, maxMarks: 100 }
+      }
+    }
   ]);
+
+  // Modal states
   const [isAddMarksModalOpen, setIsAddMarksModalOpen] = useState(false);
+  const [modalExamId, setModalExamId] = useState<string>('unitTest1');
   const [newRollNo, setNewRollNo] = useState('');
   const [newStudentName, setNewStudentName] = useState('');
-  const [newUnitTest1, setNewUnitTest1] = useState(20);
-  const [newMidterm, setNewMidterm] = useState(40);
+  const [inputMarks, setInputMarks] = useState<number>(20);
   const [editingRollNo, setEditingRollNo] = useState<string | null>(null);
+
+  // Student Profile Drawer / Modal
+  const [viewingStudent, setViewingStudent] = useState<StudentMarks | null>(null);
 
   // Student Draft list for current class session
   const [students, setStudents] = useState([
@@ -315,8 +385,8 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                 setEditingRollNo(null);
                 setNewRollNo('');
                 setNewStudentName('');
-                setNewUnitTest1(20);
-                setNewMidterm(40);
+                setModalExamId(selectedExamId);
+                setInputMarks(20);
                 setIsAddMarksModalOpen(true);
               }}
               className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
@@ -326,12 +396,43 @@ export const TeacherDedicatedDashboard: React.FC = () => {
             </button>
           </div>
 
+          {/* Exam Selector Bar & Stats */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Assessment Exam:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {availableExams.map(exam => {
+                  const isCurrent = selectedExamId === exam.id;
+                  return (
+                    <button
+                      key={exam.id}
+                      onClick={() => setSelectedExamId(exam.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                        isCurrent
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                          : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
+                      }`}
+                    >
+                      <Award className="w-3.5 h-3.5" />
+                      {exam.name}
+                      <span className="text-[10px] opacity-75 font-mono">({exam.maxMarks})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="text-xs text-slate-400 font-mono">
+              Active Evaluation: <span className="text-emerald-400 font-bold">{availableExams.find(e => e.id === selectedExamId)?.name}</span> (Max Marks: {availableExams.find(e => e.id === selectedExamId)?.maxMarks})
+            </div>
+          </div>
+
           {/* Add / Edit Marks Modal */}
           {isAddMarksModalOpen && (
             <div className="p-4 rounded-xl bg-slate-950 border border-emerald-500/40 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-400">
-                  {editingRollNo ? `Edit Marks for ${editingRollNo}` : 'Enter New Student Test Marks'}
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Edit3 className="w-4 h-4" />
+                  {editingRollNo ? `Edit Marks for ${editingRollNo} (${newStudentName})` : 'Enter New Student Test Marks'}
                 </span>
                 <button 
                   onClick={() => setIsAddMarksModalOpen(false)}
@@ -350,7 +451,7 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                     disabled={!!editingRollNo}
                     value={newRollNo}
                     onChange={(e) => setNewRollNo(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -364,24 +465,36 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">Unit Test 1 (Max 25)</label>
-                  <input
-                    type="number"
-                    max={25}
-                    min={0}
-                    value={newUnitTest1}
-                    onChange={(e) => setNewUnitTest1(Number(e.target.value))}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold font-mono"
-                  />
+                  <label className="block text-slate-400 mb-1 font-semibold">Target Exam</label>
+                  <select
+                    value={modalExamId}
+                    onChange={(e) => {
+                      setModalExamId(e.target.value);
+                      if (editingRollNo) {
+                        const targetStudent = marksData.find(m => m.rollNo === editingRollNo);
+                        const exMark = targetStudent?.exams?.[e.target.value]?.marks ?? 0;
+                        setInputMarks(exMark);
+                      }
+                    }}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white"
+                  >
+                    {availableExams.map(ex => (
+                      <option key={ex.id} value={ex.id}>
+                        {ex.name} (Max {ex.maxMarks})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1 font-semibold">Midterm (Max 50)</label>
+                  <label className="block text-slate-400 mb-1 font-semibold">
+                    Marks Obtained (Max {availableExams.find(e => e.id === modalExamId)?.maxMarks || 25})
+                  </label>
                   <input
                     type="number"
-                    max={50}
+                    max={availableExams.find(e => e.id === modalExamId)?.maxMarks || 100}
                     min={0}
-                    value={newMidterm}
-                    onChange={(e) => setNewMidterm(Number(e.target.value))}
+                    value={inputMarks}
+                    onChange={(e) => setInputMarks(Number(e.target.value))}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-emerald-400 font-bold font-mono"
                   />
                 </div>
@@ -397,24 +510,34 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                 <button
                   onClick={() => {
                     if (!newRollNo || !newStudentName) return;
+                    const maxAllowed = availableExams.find(e => e.id === modalExamId)?.maxMarks || 100;
+                    const safeMarks = Math.min(Math.max(0, inputMarks), maxAllowed);
+
                     setMarksData(prev => {
                       const exists = prev.findIndex(m => m.rollNo === newRollNo);
                       if (exists >= 0) {
                         const copy = [...prev];
+                        const currExams = copy[exists].exams || {};
                         copy[exists] = {
                           ...copy[exists],
                           name: newStudentName,
-                          unitTest1: newUnitTest1,
-                          midterm: newMidterm
+                          exams: {
+                            ...currExams,
+                            [modalExamId]: { marks: safeMarks, maxMarks: maxAllowed }
+                          }
                         };
                         return copy;
                       } else {
                         return [...prev, {
                           rollNo: newRollNo,
                           name: newStudentName,
-                          unitTest1: newUnitTest1,
-                          midterm: newMidterm,
-                          attendancePct: 85
+                          attendancePct: 85,
+                          email: `${newRollNo.toLowerCase()}@campus.edu`,
+                          department: 'Computer Science & Engineering',
+                          semester: 'Semester 5',
+                          exams: {
+                            [modalExamId]: { marks: safeMarks, maxMarks: maxAllowed }
+                          }
                         }];
                       }
                     });
@@ -433,50 +556,219 @@ export const TeacherDedicatedDashboard: React.FC = () => {
               <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
                 <tr>
                   <th className="py-2.5 px-3">Roll No</th>
-                  <th className="py-2.5 px-3">Student Name</th>
-                  <th className="py-2.5 px-3">Unit Test 1 (25)</th>
-                  <th className="py-2.5 px-3">Midterm (50)</th>
+                  <th className="py-2.5 px-3">Student Name (Click for dossier)</th>
+                  <th className="py-2.5 px-3">
+                    {availableExams.find(e => e.id === selectedExamId)?.name} ({availableExams.find(e => e.id === selectedExamId)?.maxMarks})
+                  </th>
+                  <th className="py-2.5 px-3">All Exams Average</th>
                   <th className="py-2.5 px-3">Attendance %</th>
                   <th className="py-2.5 px-3">Eligibility</th>
                   <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono">
-                {marksData.map((item) => (
-                  <tr key={item.rollNo} className="hover:bg-slate-900/60">
-                    <td className="py-2.5 px-3 text-slate-400">{item.rollNo}</td>
-                    <td className="py-2.5 px-3 font-bold text-white font-sans">{item.name}</td>
-                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{item.unitTest1}/25</td>
-                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{item.midterm}/50</td>
-                    <td className="py-2.5 px-3 text-sky-400">{item.attendancePct}%</td>
-                    <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        item.attendancePct >= 75 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}>
-                        {item.attendancePct >= 75 ? 'Eligible' : 'Borderline'}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-right space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingRollNo(item.rollNo);
-                          setNewRollNo(item.rollNo);
-                          setNewStudentName(item.name);
-                          setNewUnitTest1(item.unitTest1);
-                          setNewMidterm(item.midterm);
-                          setIsAddMarksModalOpen(true);
-                        }}
-                        className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-sans font-semibold inline-flex items-center gap-1"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {marksData.map((item) => {
+                  const currExam = item.exams?.[selectedExamId];
+                  const examMarks = currExam ? currExam.marks : 0;
+                  const examMax = currExam ? currExam.maxMarks : (availableExams.find(e => e.id === selectedExamId)?.maxMarks || 25);
+                  
+                  // Compute overall average
+                  const examKeys = Object.keys(item.exams || {});
+                  const avgPercent = examKeys.length > 0 
+                    ? Math.round(examKeys.reduce((acc, k) => acc + (item.exams[k].marks / item.exams[k].maxMarks) * 100, 0) / examKeys.length)
+                    : 0;
+
+                  return (
+                    <tr key={item.rollNo} className="hover:bg-slate-900/60">
+                      <td className="py-2.5 px-3 text-slate-400">{item.rollNo}</td>
+                      <td className="py-2.5 px-3 font-sans">
+                        <button
+                          onClick={() => setViewingStudent(item)}
+                          className="font-bold text-white hover:text-emerald-400 hover:underline flex items-center gap-1.5 transition-colors text-left"
+                          title="Click to view complete student profile, marks breakdown & attendance"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-emerald-400/80" />
+                          {item.name}
+                        </button>
+                      </td>
+                      <td className="py-2.5 px-3 text-emerald-400 font-bold font-mono">
+                        {examMarks}/{examMax}
+                        <span className="text-[10px] text-slate-500 font-sans ml-1">
+                          ({Math.round((examMarks / examMax) * 100)}%)
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-purple-400 font-bold">
+                        {avgPercent}%
+                      </td>
+                      <td className="py-2.5 px-3 text-sky-400">{item.attendancePct}%</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.attendancePct >= 75 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          {item.attendancePct >= 75 ? 'Eligible' : 'Borderline'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingRollNo(item.rollNo);
+                            setNewRollNo(item.rollNo);
+                            setNewStudentName(item.name);
+                            setModalExamId(selectedExamId);
+                            setInputMarks(item.exams?.[selectedExamId]?.marks ?? 0);
+                            setIsAddMarksModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-sans font-semibold inline-flex items-center gap-1 shadow-sm"
+                        >
+                          <Edit3 className="w-3 h-3 text-emerald-400" />
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Student Dossier Modal */}
+          {viewingStudent && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
+                <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-sky-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-emerald-600/30">
+                      {viewingStudent.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        {viewingStudent.name}
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono">
+                          {viewingStudent.rollNo}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        {viewingStudent.department || 'Computer Science & Engineering'} • {viewingStudent.semester || 'Semester 5'}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setViewingStudent(null)}
+                    className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Contact & Bio cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <span className="text-slate-400 block mb-1">Email Address</span>
+                    <span className="font-mono text-slate-200 break-all">{viewingStudent.email || `${viewingStudent.rollNo.toLowerCase()}@campus.edu`}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <span className="text-slate-400 block mb-1">Contact Phone</span>
+                    <span className="font-mono text-slate-200">{viewingStudent.phone || '+91 98765 00000'}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <span className="text-slate-400 block mb-1">Attendance Status</span>
+                    <span className={`font-bold font-mono ${viewingStudent.attendancePct >= 75 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {viewingStudent.attendancePct}% ({viewingStudent.attendancePct >= 75 ? 'Eligible' : 'Attendance Shortage'})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Comprehensive Marks Breakdown */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-emerald-400" />
+                      All Academic Exams & Marks Record
+                    </h4>
+                    <span className="text-xs font-mono text-slate-400">
+                      Overall Average: <strong className="text-emerald-400">
+                        {Math.round(
+                          Object.keys(viewingStudent.exams || {}).reduce((acc, k) => acc + (viewingStudent.exams[k].marks / viewingStudent.exams[k].maxMarks) * 100, 0) /
+                          Math.max(1, Object.keys(viewingStudent.exams || {}).length)
+                        )}%
+                      </strong>
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-xl border border-slate-800">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+                        <tr>
+                          <th className="py-2 px-3">Exam Name</th>
+                          <th className="py-2 px-3">Max Marks</th>
+                          <th className="py-2 px-3">Scored</th>
+                          <th className="py-2 px-3">Percentage</th>
+                          <th className="py-2 px-3">Grade</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 font-mono bg-slate-950/40">
+                        {availableExams.map(ex => {
+                          const record = viewingStudent.exams?.[ex.id];
+                          const score = record ? record.marks : 0;
+                          const maxM = record ? record.maxMarks : ex.maxMarks;
+                          const pct = Math.round((score / maxM) * 100);
+                          let grade = 'F';
+                          if (pct >= 90) grade = 'O (Outstanding)';
+                          else if (pct >= 80) grade = 'A+ (Excellent)';
+                          else if (pct >= 70) grade = 'A (Very Good)';
+                          else if (pct >= 60) grade = 'B+ (Good)';
+                          else if (pct >= 50) grade = 'B (Above Average)';
+                          else if (pct >= 40) grade = 'C (Pass)';
+
+                          return (
+                            <tr key={ex.id} className="hover:bg-slate-800/40">
+                              <td className="py-2 px-3 text-slate-200 font-sans font-medium">{ex.name}</td>
+                              <td className="py-2 px-3 text-slate-400">{maxM}</td>
+                              <td className="py-2 px-3 text-emerald-400 font-bold">{score}</td>
+                              <td className="py-2 px-3 text-purple-400 font-bold">{pct}%</td>
+                              <td className="py-2 px-3">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  pct >= 75 ? 'bg-emerald-500/20 text-emerald-400' : pct >= 50 ? 'bg-sky-500/20 text-sky-400' : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {grade}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Quick actions in Dossier */}
+                <div className="flex justify-between items-center pt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      const st = viewingStudent;
+                      setViewingStudent(null);
+                      setEditingRollNo(st.rollNo);
+                      setNewRollNo(st.rollNo);
+                      setNewStudentName(st.name);
+                      setModalExamId(selectedExamId);
+                      setInputMarks(st.exams?.[selectedExamId]?.marks ?? 0);
+                      setIsAddMarksModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-emerald-400" />
+                    Edit Marks for this Student
+                  </button>
+                  <button
+                    onClick={() => setViewingStudent(null)}
+                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/30"
+                  >
+                    Close Dossier
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
