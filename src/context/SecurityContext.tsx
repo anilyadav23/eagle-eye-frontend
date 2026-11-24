@@ -53,6 +53,8 @@ interface SecurityContextType {
   approvalRequests: PendingApprovalRequest[];
   submitApprovalRequest: (request: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => void;
   updateApprovalRequestStatus: (id: string, status: 'Approved' | 'Rejected') => void;
+  deleteApprovalRequest: (id: string) => void;
+  deleteUserProfile: (identifier: string) => void;
   // Actions
   setSelectedPersonId: (id: string) => void;
   setSelectedCameraId: (id: string | null) => void;
@@ -310,6 +312,19 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
     ];
   });
 
+  // Listen to cross-component or cross-tab localStorage updates for approvals
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'eagle_eye_approval_requests' && e.newValue) {
+        try {
+          setApprovalRequests(JSON.parse(e.newValue));
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const submitApprovalRequest = (newReq: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => {
     const formatted: PendingApprovalRequest = {
       id: newReq.id || `REQ-${Date.now()}`,
@@ -329,7 +344,8 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       reason: newReq.reason
     };
     setApprovalRequests(prev => {
-      const updated = [formatted, ...prev];
+      const filtered = prev.filter(r => r.rollNo.toLowerCase() !== formatted.rollNo.toLowerCase() && r.id !== formatted.id);
+      const updated = [formatted, ...filtered];
       try {
         localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
       } catch (e) {}
@@ -339,12 +355,72 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const updateApprovalRequestStatus = (id: string, status: 'Approved' | 'Rejected') => {
     setApprovalRequests(prev => {
+      const targetReq = prev.find(r => r.id === id);
       const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+      try {
+        localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+
+        // When approved or rejected, also sync with registered_users in localStorage
+        const regList: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+        if (targetReq && regList.length > 0) {
+          const uIdx = regList.findIndex(
+            u => (u.username && u.username.toLowerCase() === targetReq.rollNo.toLowerCase()) ||
+                 (u.email && u.email.toLowerCase() === targetReq.email.toLowerCase())
+          );
+          if (uIdx >= 0) {
+            regList[uIdx].is_active = status === 'Approved' ? 1 : 0;
+            regList[uIdx].approval_status = status;
+            localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
+          }
+        }
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const deleteApprovalRequest = (id: string) => {
+    setApprovalRequests(prev => {
+      const updated = prev.filter(r => r.id !== id);
       try {
         localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
+  };
+
+  const deleteUserProfile = (identifier: string) => {
+    const clean = identifier.trim().toLowerCase();
+    // 1. Remove from approvals
+    setApprovalRequests(prev => {
+      const updated = prev.filter(
+        r => r.id !== identifier &&
+             r.rollNo.toLowerCase() !== clean &&
+             r.email.toLowerCase() !== clean &&
+             r.studentName.toLowerCase() !== clean
+      );
+      try {
+        localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    // 2. Remove from registered users
+    try {
+      const regList: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+      const filtered = regList.filter(
+        u => u.id !== identifier &&
+             u.username.toLowerCase() !== clean &&
+             (u.email && u.email.toLowerCase() !== clean)
+      );
+      localStorage.setItem('eagle_eye_registered_users', JSON.stringify(filtered));
+    } catch (e) {}
+
+    // 3. Remove from attendance records
+    setAttendanceRecords(prev => prev.filter(
+      a => a.person_id !== identifier &&
+           a.student_id !== identifier &&
+           a.name.toLowerCase() !== clean
+    ));
   };
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -920,7 +996,9 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       saveBlueprint,
       approvalRequests,
       submitApprovalRequest,
-      updateApprovalRequestStatus
+      updateApprovalRequestStatus,
+      deleteApprovalRequest,
+      deleteUserProfile
     }}>
       {children}
     </SecurityContext.Provider>

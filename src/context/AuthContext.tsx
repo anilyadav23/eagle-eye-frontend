@@ -92,18 +92,60 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         );
 
         if (foundUser && foundUser.password === password) {
+          // If the registered user is a Teacher, Admin, or HOD, allow direct login
+          if (foundUser.role !== 'Student') {
+            const registeredToken = `reg-token-${foundUser.id}-${Date.now()}`;
+            const authObj: AuthUser = {
+              id: foundUser.id,
+              username: foundUser.username,
+              email: foundUser.email,
+              role: foundUser.role,
+              full_name: foundUser.full_name || foundUser.username
+            };
+            setToken(registeredToken);
+            setUser(authObj);
+            localStorage.setItem(TOKEN_KEY, registeredToken);
+            localStorage.setItem(USER_KEY, JSON.stringify(authObj));
+            return { success: true };
+          }
+
           // Check if this student account has been approved by HOD or Teacher
+          // 1. Direct active flag on user record
+          if ((foundUser as any).is_active === 1 || (foundUser as any).approval_status === 'Approved') {
+            const registeredToken = `reg-token-${foundUser.id}-${Date.now()}`;
+            const authObj: AuthUser = {
+              id: foundUser.id,
+              username: foundUser.username,
+              email: foundUser.email,
+              role: foundUser.role,
+              full_name: foundUser.full_name || foundUser.username
+            };
+            setToken(registeredToken);
+            setUser(authObj);
+            localStorage.setItem(TOKEN_KEY, registeredToken);
+            localStorage.setItem(USER_KEY, JSON.stringify(authObj));
+            return { success: true };
+          }
+
+          // 2. Approvals queue matching
           const approvalsJson = localStorage.getItem('eagle_eye_approval_requests');
           const approvals = approvalsJson ? JSON.parse(approvalsJson) : [];
           
           const matchingReq = approvals.find(
             (r: any) => 
-              (r.rollNo && r.rollNo.toLowerCase() === cleanUser) ||
-              (r.email && r.email.toLowerCase() === foundUser.email.toLowerCase()) ||
-              (r.studentName && r.studentName.toLowerCase() === (foundUser.full_name || '').toLowerCase())
+              (r.rollNo && r.rollNo.trim().toLowerCase() === cleanUser) ||
+              (r.email && r.email.trim().toLowerCase() === foundUser.email.trim().toLowerCase()) ||
+              (r.studentName && r.studentName.trim().toLowerCase() === (foundUser.full_name || '').trim().toLowerCase())
           );
 
           if (matchingReq && matchingReq.status === 'Approved') {
+            // Update foundUser record to active so future lookups are immediate
+            (foundUser as any).is_active = 1;
+            (foundUser as any).approval_status = 'Approved';
+            try {
+              localStorage.setItem('eagle_eye_registered_users', JSON.stringify(registeredUsers));
+            } catch (e) {}
+
             const registeredToken = `reg-token-${foundUser.id}-${Date.now()}`;
             const authObj: AuthUser = {
               id: foundUser.id,

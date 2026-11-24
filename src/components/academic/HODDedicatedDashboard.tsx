@@ -3,7 +3,7 @@ import {
   Building2, Users, Calendar, CheckCircle2, AlertTriangle, 
   Clock, Camera, ShieldCheck, ChevronRight, FileText, 
   Search, Filter, ArrowUpRight, Check, X, Bell, Eye, Download, ShieldAlert,
-  GraduationCap, UserCheck2, RefreshCw
+  GraduationCap, UserCheck2, RefreshCw, Trash2, UserX
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +30,7 @@ interface HODDedicatedDashboardProps {
 }
 
 export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () => {
-  const { attendanceRecords, persons, cameras, approvalRequests, updateApprovalRequestStatus } = useSecurity();
+  const { attendanceRecords, persons, cameras, approvalRequests, updateApprovalRequestStatus, deleteApprovalRequest, deleteUserProfile } = useSecurity();
   const { user } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'attendance' | 'timetable' | 'camerawall'>('overview');
   const [filterYear, setFilterYear] = useState('3');
@@ -46,6 +46,12 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
 
   const handleReject = (id: string) => {
     updateApprovalRequestStatus(id, 'Rejected');
+  };
+
+  const handleDeleteProfile = (identifier: string, name: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete user profile for "${name}" (${identifier})? This will revoke access and delete credentials.`)) {
+      deleteUserProfile(identifier);
+    }
   };
 
   // Timetable schedule matrix
@@ -316,6 +322,15 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
                       Status: {req.status}
                     </span>
                   )}
+                  {/* HOD Delete User Profile Button */}
+                  <button
+                    onClick={() => handleDeleteProfile(req.rollNo || req.id, req.studentName)}
+                    title="Permanently Delete User Profile from System"
+                    className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900 border border-red-700/50 text-red-400 hover:text-red-200 text-xs font-semibold transition-all flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Profile</span>
+                  </button>
                 </div>
               </div>
             ))}
