@@ -246,71 +246,55 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [unknownDetectionData, setUnknownDetectionData] = useState<{ trackId: string; photoUrl: string } | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // Default initial approval requests (cached in localStorage so user submissions persist)
+  // Default initial approval requests (cached in localStorage and merged with registered student profiles)
   const [approvalRequests, setApprovalRequests] = useState<PendingApprovalRequest[]>(() => {
+    let requests: PendingApprovalRequest[] = [];
     try {
       const saved = localStorage.getItem('eagle_eye_approval_requests');
-      if (saved) return JSON.parse(saved);
+      if (saved) requests = JSON.parse(saved);
     } catch (e) {
-      // fallback
+      requests = [];
     }
-    return [
-      {
-        id: 'REQ-2026-001',
-        studentName: 'Arjun Kumar',
-        rollNo: 'CS23A001',
-        regNo: 'REG2025001',
-        branch: 'Electronics & Communication',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        section: 'A',
-        email: 'arjun.kumar@campus.edu',
-        mobile: '9876543210',
-        submittedAt: '10:34 AM Today',
-        photos: [
-          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=face',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-        ],
-        type: 'New Registration',
-        status: 'Pending'
-      },
-      {
-        id: 'REQ-2026-002',
-        studentName: 'Priya Sharma',
-        rollNo: '21ECE002',
-        regNo: 'REG2024098',
-        branch: 'Electronics & Communication',
-        year: '3rd Year',
-        semester: '5th Semester',
-        section: 'B',
-        email: 'priya.s@campus.edu',
-        mobile: '9811224455',
-        submittedAt: '09:40 AM Today',
-        photos: [
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face'
-        ],
-        type: 'Photo Update Request',
-        status: 'Pending'
-      },
-      {
-        id: 'REQ-2026-003',
-        studentName: 'Karan Malhotra',
-        rollNo: '22ECE045',
-        regNo: 'REG2024112',
-        branch: 'Electronics & Communication',
-        year: '2nd Year',
-        semester: '3rd Semester',
-        section: 'A',
-        email: 'karan.m@campus.edu',
-        mobile: '9844556677',
-        submittedAt: '08:15 AM Today',
-        photos: [
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
-        ],
-        type: 'Elective Course Exemption',
-        status: 'Pending'
+
+    // Merge any student from eagle_eye_registered_users that is pending or registered
+    try {
+      const registeredJson = localStorage.getItem('eagle_eye_registered_users');
+      if (registeredJson) {
+        const users: any[] = JSON.parse(registeredJson);
+        users.forEach(u => {
+          if (u.role === 'Student') {
+            const exists = requests.some(
+              r => (r.rollNo && r.rollNo.toLowerCase() === u.username.toLowerCase()) ||
+                   (r.email && r.email.toLowerCase() === (u.email || '').toLowerCase())
+            );
+            if (!exists) {
+              requests.unshift({
+                id: u.id || `REG-REQ-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                studentName: u.full_name || u.username,
+                rollNo: u.username,
+                regNo: u.regNo || `REG-${Math.floor(100000 + Math.random() * 900000)}`,
+                department: u.department || 'Electronics & Communication Engineering',
+                branch: u.branch || 'Electronics & Communication Engineering (ECE)',
+                year: u.year || 'Pending Allocation',
+                semester: u.semester || 'Pending Allocation',
+                section: u.section || 'Pending',
+                email: u.email || '',
+                mobile: u.phone || '+91 98000 00000',
+                submittedAt: 'Recent Submission',
+                photos: [
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'
+                ],
+                type: 'New Student Admission & Biometric Clearance',
+                status: u.approval_status === 'Approved' ? 'Approved' : 'Pending',
+                reason: `Self-registration profile for ${u.full_name || u.username} (${u.username}) awaiting clearance.`
+              });
+            }
+          }
+        });
       }
-    ];
+    } catch (e) {}
+
+    return requests;
   });
 
   // Shared real-time cloud broadcast channel for multi-user / multi-device synchronization
@@ -333,6 +317,41 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (e.key === 'eagle_eye_approval_requests' && e.newValue) {
         try {
           setApprovalRequests(JSON.parse(e.newValue));
+        } catch (err) {}
+      } else if (e.key === 'eagle_eye_registered_users' && e.newValue) {
+        try {
+          const regUsers: any[] = JSON.parse(e.newValue);
+          setApprovalRequests(prev => {
+            let changed = false;
+            const updated = [...prev];
+            regUsers.forEach(u => {
+              if (u.role === 'Student') {
+                const idx = updated.findIndex(r => r.rollNo.toLowerCase() === u.username.toLowerCase());
+                if (idx < 0) {
+                  changed = true;
+                  updated.unshift({
+                    id: u.id || `REG-REQ-${Date.now()}`,
+                    studentName: u.full_name || u.username,
+                    rollNo: u.username,
+                    regNo: u.regNo || `REG-${Math.floor(100000 + Math.random() * 900000)}`,
+                    department: u.department || 'Electronics & Communication Engineering',
+                    branch: u.branch || 'Electronics & Communication Engineering (ECE)',
+                    year: u.year || 'Pending Allocation',
+                    semester: u.semester || 'Pending Allocation',
+                    section: u.section || 'Pending',
+                    email: u.email || '',
+                    mobile: u.phone || '+91 98000 00000',
+                    submittedAt: 'Recent Submission',
+                    photos: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'],
+                    type: 'New Student Admission & Biometric Clearance',
+                    status: u.approval_status === 'Approved' ? 'Approved' : 'Pending',
+                    reason: `Self-registration profile awaiting clearance.`
+                  });
+                }
+              }
+            });
+            return changed ? updated : prev;
+          });
         } catch (err) {}
       }
     };
