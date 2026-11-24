@@ -312,8 +312,22 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
     ];
   });
 
-  // Listen to cross-component or cross-tab localStorage updates for approvals
+  // Shared real-time cloud broadcast channel for multi-user / multi-device synchronization
+  const NTFY_SYNC_URL = 'https://ntfy.sh/eagle_eye_approval_queue_98234';
+
+  const broadcastCloudSync = (actionType: string, payload: any) => {
+    try {
+      fetch(NTFY_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionType, data: payload, timestamp: Date.now() })
+      }).catch(() => {});
+    } catch (e) {}
+  };
+
+  // Listen to cross-component, cross-tab, and cross-device cloud sync for approvals
   useEffect(() => {
+    // 1. Local Storage Event (Same device, different tab/window)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'eagle_eye_approval_requests' && e.newValue) {
         try {
@@ -322,7 +336,96 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    // 2. Cross-Device SSE / Polling Stream (Different devices / phones / browsers)
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(`${NTFY_SYNC_URL}/sse`);
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed.message) {
+            const inner = JSON.parse(parsed.message);
+            if (inner.action === 'SUBMIT_REQUEST') {
+              const incoming = inner.data;
+              setApprovalRequests(prev => {
+                const filtered = prev.filter(r => r.rollNo.toLowerCase() !== incoming.rollNo.toLowerCase() && r.id !== incoming.id);
+                const updated = [incoming, ...filtered];
+                try {
+                  localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+                } catch (e) {}
+                return updated;
+              });
+            } else if (inner.action === 'UPDATE_STATUS') {
+              const { id, status } = inner.data;
+              setApprovalRequests(prev => {
+                const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+                try {
+                  localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+                } catch (e) {}
+                return updated;
+              });
+            } else if (inner.action === 'DELETE_REQUEST') {
+              const { identifier } = inner.data;
+              const clean = identifier.trim().toLowerCase();
+              setApprovalRequests(prev => {
+                const updated = prev.filter(r => r.id !== identifier && r.rollNo.toLowerCase() !== clean);
+                try {
+                  localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+                } catch (e) {}
+                return updated;
+              });
+            }
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+
+    // 3. Fallback periodic poll to ensure HOD/Teacher receive requests even if SSE disconnected
+    const pollInterval = setInterval(() => {
+      fetch(`${NTFY_SYNC_URL}/json?poll=1&since=10m`)
+        .then(r => r.text())
+        .then(text => {
+          if (!text) return;
+          const lines = text.trim().split('\n');
+          lines.forEach(line => {
+            try {
+              const parsed = JSON.parse(line);
+              if (parsed.message) {
+                const inner = JSON.parse(parsed.message);
+                if (inner.action === 'SUBMIT_REQUEST') {
+                  const incoming = inner.data;
+                  setApprovalRequests(prev => {
+                    if (prev.some(r => r.id === incoming.id)) return prev;
+                    const filtered = prev.filter(r => r.rollNo.toLowerCase() !== incoming.rollNo.toLowerCase());
+                    const updated = [incoming, ...filtered];
+                    try {
+                      localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+                    } catch (e) {}
+                    return updated;
+                  });
+                } else if (inner.action === 'UPDATE_STATUS') {
+                  const { id, status } = inner.data;
+                  setApprovalRequests(prev => {
+                    const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+                    try {
+                      localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+                    } catch (e) {}
+                    return updated;
+                  });
+                }
+              }
+            } catch (e) {}
+          });
+        })
+        .catch(() => {});
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      if (eventSource) eventSource.close();
+      clearInterval(pollInterval);
+    };
   }, []);
 
   const submitApprovalRequest = (newReq: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => {
@@ -351,6 +454,9 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       } catch (e) {}
       return updated;
     });
+
+    // Broadcast across devices instantly
+    broadcastCloudSync('SUBMIT_REQUEST', formatted);
   };
 
   const updateApprovalRequestStatus = (id: string, status: 'Approved' | 'Rejected') => {
@@ -376,6 +482,9 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       } catch (e) {}
       return updated;
     });
+
+    // Broadcast across devices
+    broadcastCloudSync('UPDATE_STATUS', { id, status });
   };
 
   const deleteApprovalRequest = (id: string) => {
@@ -386,6 +495,7 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       } catch (e) {}
       return updated;
     });
+    broadcastCloudSync('DELETE_REQUEST', { identifier: id });
   };
 
   const deleteUserProfile = (identifier: string) => {
@@ -421,6 +531,8 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
            a.student_id !== identifier &&
            a.name.toLowerCase() !== clean
     ));
+
+    broadcastCloudSync('DELETE_REQUEST', { identifier });
   };
 
   const wsRef = useRef<WebSocket | null>(null);

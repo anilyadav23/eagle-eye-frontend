@@ -294,6 +294,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         approvalList.unshift(newApprovalReq);
       }
       localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(approvalList));
+
+      // Broadcast immediately across devices to HOD & Teacher portals via cloud channel
+      try {
+        fetch('https://ntfy.sh/eagle_eye_approval_queue_98234', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'SUBMIT_REQUEST',
+            data: newApprovalReq,
+            timestamp: Date.now()
+          })
+        }).catch(() => {});
+      } catch (err) {}
     } catch (e) {
       console.warn('Failed saving local registration and approval request', e);
     }
