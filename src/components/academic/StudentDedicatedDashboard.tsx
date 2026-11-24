@@ -1146,7 +1146,7 @@ export const StudentDedicatedDashboard: React.FC = () => {
                 <div key={req.id} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold text-white block">{req.type}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">Submitted: {req.submittedAt || req.date || 'Recent'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">Submitted: {req.submittedAt || (req as any).date || 'Recent'}</span>
                   </div>
                   <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg ${
                     req.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
