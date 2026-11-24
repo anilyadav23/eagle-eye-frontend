@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // Standalone fallback demo credentials when running on static hosts without live backend API
+  // Emergency root credential fallback for HOD if backend is offline or static hosting
   const DEMO_FALLBACK_USERS: Record<string, { pass: string[]; user: AuthUser }> = {
     hodecc: {
       pass: ['Anil@2026', 'anil@2026', 'hod123'],
@@ -64,22 +64,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     hod: {
       pass: ['Anil@2026', 'anil@2026', 'hod123'],
       user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
-    },
-    teacher: {
-      pass: ['teacher123'],
-      user: { id: 'usr-tch', username: 'teacher', email: 'prof.ananya@campus.edu', role: 'Teacher', full_name: 'Prof. Ananya Sen' }
-    },
-    student: {
-      pass: ['student123'],
-      user: { id: 'usr-std', username: 'student', email: 'rohit.kumar@student.campus.edu', role: 'Student', full_name: 'Rohit Kumar (CS-22-049)' }
-    },
-    admin: {
-      pass: ['admin123'],
-      user: { id: 'usr-adm', username: 'admin', email: 'admin@campus.edu', role: 'Admin', full_name: 'System Administrator' }
-    },
-    guard: {
-      pass: ['guard123'],
-      user: { id: 'usr-grd', username: 'guard', email: 'gate1.security@campus.edu', role: 'Guard', full_name: 'Main Gate Control Desk' }
     }
   };
 
