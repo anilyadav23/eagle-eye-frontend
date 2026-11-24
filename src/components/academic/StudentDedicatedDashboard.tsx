@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
-import { MASTER_BRANCH_SUBJECT_CATALOG, ECC_SUBJECT_CATALOG } from '../../data/syllabusCatalog';
+import { MASTER_BRANCH_SUBJECT_CATALOG, getBranchSubjects } from '../../data/syllabusCatalog';
 
 interface AttendanceLogEntry {
   date: string;
@@ -47,8 +47,8 @@ export const StudentDedicatedDashboard: React.FC = () => {
   };
 
   // Student Profile Data - sourced strictly from authenticated user and academic allocation
-  const studentDepartment = user?.department || 'Computer Science & Engineering';
-  const studentBranch = user?.branch || 'Computer Science & Engineering';
+  const studentDepartment = user?.department || 'Electronics & Communication Engineering';
+  const studentBranch = user?.branch || 'Electronics & Communication Engineering (ECE)';
   const studentSemester = user?.semester || '3rd Semester';
   const studentYear = user?.year || '2nd Year';
   const studentSection = user?.section || 'Section A';
@@ -76,20 +76,10 @@ export const StudentDedicatedDashboard: React.FC = () => {
   };
 
   // Dynamically resolve student subjects based on their allocated Department/Branch & Semester
-  // Defaults directly to official ECC Curriculum if branch is ECC/ECE or fallback to 3rd Semester ECC
-  const isEccOrEce = 
-    studentBranch.toLowerCase().includes('ecc') || 
-    studentBranch.toLowerCase().includes('ece') || 
-    studentBranch.toLowerCase().includes('electronics') ||
-    studentDepartment.toLowerCase().includes('electronics') ||
-    studentDepartment.toLowerCase().includes('ecc');
-
+  // Strictly uses official schemes for ECE, ECC, or EEE under Electronics & Communication
   const assignedSubjectList = 
     MASTER_BRANCH_SUBJECT_CATALOG[studentBranch]?.[studentSemester] ||
-    MASTER_BRANCH_SUBJECT_CATALOG[studentDepartment]?.[studentSemester] ||
-    (isEccOrEce ? ECC_SUBJECT_CATALOG[studentSemester] || ECC_SUBJECT_CATALOG['3rd Semester'] : null) ||
-    ECC_SUBJECT_CATALOG[studentSemester] ||
-    ECC_SUBJECT_CATALOG['3rd Semester'];
+    getBranchSubjects(studentBranch, studentSemester);
 
   // Real Official Attendance Records from Faculty & Camera Roll Calls
   const studentOfficialAttendanceRecords = attendanceRecords.filter(

@@ -20,8 +20,8 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regPhone, setRegPhone] = useState('');
-  const [regDepartment, setRegDepartment] = useState('Computer Science & Engineering');
-  const [regBranch, setRegBranch] = useState('Computer Science & Engineering');
+  const [regDepartment, setRegDepartment] = useState('Electronics & Communication Engineering');
+  const [regBranch, setRegBranch] = useState('Electronics & Communication Engineering (ECE)');
   const [regRole, setRegRole] = useState<'Student' | 'Teacher'>('Student');
   const [regSuccessMsg, setRegSuccessMsg] = useState<string | null>(null);
 
@@ -270,25 +270,10 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                   <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Department</label>
                   <select
                     value={regDepartment}
-                    onChange={(e) => {
-                      setRegDepartment(e.target.value);
-                      if (e.target.value === 'Electronics & Communication Engineering') {
-                        setRegBranch('Electronics & Communication Engineering');
-                      } else if (e.target.value === 'Mechanical Engineering') {
-                        setRegBranch('Mechanical Engineering');
-                      } else if (e.target.value === 'Civil Engineering') {
-                        setRegBranch('Civil Engineering');
-                      } else {
-                        setRegBranch('Computer Science & Engineering');
-                      }
-                    }}
+                    onChange={(e) => setRegDepartment(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
                   >
-                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Communication</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                    <option value="Civil Engineering">Civil Engineering</option>
-                    <option value="Electrical Engineering">Electrical Engineering</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
                   </select>
                 </div>
                 <div>
@@ -298,13 +283,9 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                     onChange={(e) => setRegBranch(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
                   >
+                    <option value="Electronics & Communication Engineering (ECE)">Electronics & Communication Engineering (ECE)</option>
                     <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
-                    <option value="Computer Science & Engineering">Computer Science (CSE)</option>
-                    <option value="AI & Data Science">AI & Data Science (AIDS)</option>
-                    <option value="Information Technology">Information Technology (IT)</option>
-                    <option value="Mechanical Engineering">Mechanical (ME)</option>
-                    <option value="Civil Engineering">Civil (CE)</option>
+                    <option value="Electrical & Electronics Engineering (EEE)">Electrical & Electronics Engineering (EEE)</option>
                   </select>
                 </div>
               </div>

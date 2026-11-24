@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
-import { ECC_SUBJECT_CATALOG } from '../../data/syllabusCatalog';
+import { getBranchSubjects, ECE_SUBJECT_CATALOG } from '../../data/syllabusCatalog';
 
 interface StudentExamMark {
   examName: string;
@@ -33,13 +33,14 @@ export const TeacherDedicatedDashboard: React.FC = () => {
   
   // Class state
   const [classType, setClassType] = useState<'Regular Class' | 'Extra Class' | 'Combined Class' | 'Substitute'>('Regular Class');
-  const [activeRoom, setActiveRoom] = useState('Lecture Hall 101 - ECC');
+  const [activeRoom, setActiveRoom] = useState('Lecture Hall 101 - ECE/ECC/EEE');
   const [isAttendanceFinalized, setIsAttendanceFinalized] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState('Electronics & Communication Engineering (ECE)');
   const [selectedSemester, setSelectedSemester] = useState('3rd Semester');
-  const [selectedSubject, setSelectedSubject] = useState('3ECC41A(ECE) - Advanced Engineering Mathematics-I');
+  const [selectedSubject, setSelectedSubject] = useState('3ECE41A(ECE) - Advanced Engineering Mathematics-I');
 
-  // Dynamic subjects based on selected semester
-  const teacherSemesterSubjects = ECC_SUBJECT_CATALOG[selectedSemester] || ECC_SUBJECT_CATALOG['3rd Semester'];
+  // Dynamic subjects based on selected branch and semester
+  const teacherSemesterSubjects = getBranchSubjects(selectedBranch, selectedSemester);
 
   // Dynamic Teacher-Configured Exams (test name and max marks are decided by teacher)
   const [availableExams, setAvailableExams] = useState<Array<{ id: string; name: string; maxMarks: number }>>(() => {
@@ -321,7 +322,27 @@ export const TeacherDedicatedDashboard: React.FC = () => {
       {activeTab === 'classroom' && (
         <div className="space-y-6">
           <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">Branch</span>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => {
+                    const newBranch = e.target.value;
+                    setSelectedBranch(newBranch);
+                    const subs = getBranchSubjects(newBranch, selectedSemester);
+                    if (subs.length > 0) {
+                      setSelectedSubject(`${subs[0].code} - ${subs[0].name}`);
+                    }
+                  }}
+                  className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
+                >
+                  <option value="Electronics & Communication Engineering (ECE)">ECE</option>
+                  <option value="Electronics & Computer Control (ECC)">ECC</option>
+                  <option value="Electrical & Electronics Engineering (EEE)">EEE</option>
+                </select>
+              </div>
+
               <div>
                 <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">Semester</span>
                 <select
@@ -329,21 +350,21 @@ export const TeacherDedicatedDashboard: React.FC = () => {
                   onChange={(e) => {
                     const newSem = e.target.value;
                     setSelectedSemester(newSem);
-                    const subs = ECC_SUBJECT_CATALOG[newSem] || [];
+                    const subs = getBranchSubjects(selectedBranch, newSem);
                     if (subs.length > 0) {
                       setSelectedSubject(`${subs[0].code} - ${subs[0].name}`);
                     }
                   }}
                   className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
                 >
-                  {Object.keys(ECC_SUBJECT_CATALOG).map(sem => (
+                  {['3rd Semester', '4th Semester', '5th Semester', '6th Semester', '7th Semester', '8th Semester'].map(sem => (
                     <option key={sem} value={sem}>{sem}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">ECC Active Course / Subject</span>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-slate-400 block font-semibold">Active Course / Subject</span>
                 <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}

@@ -517,11 +517,7 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
                     onChange={(e) => setAllocDepartment(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
                   >
-                    <option value="Computer Science & Engineering">Computer Science & Engineering</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Communication</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                    <option value="Civil Engineering">Civil Engineering</option>
-                    <option value="Electrical Engineering">Electrical Engineering</option>
+                    <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
                   </select>
                 </div>
                 <div>
@@ -531,13 +527,9 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
                     onChange={(e) => setAllocBranch(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 text-xs focus:border-sky-500 font-mono"
                   >
-                    <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
-                    <option value="Electronics & Communication Engineering">Electronics & Comm. (ECE)</option>
-                    <option value="Computer Science & Engineering">Computer Science (CSE)</option>
-                    <option value="AI & Data Science">AI & Data Science (AIDS)</option>
-                    <option value="Information Technology">Information Technology (IT)</option>
-                    <option value="Mechanical Engineering">Mechanical (ME)</option>
-                    <option value="Civil Engineering">Civil (CE)</option>
+                    <option value="Electronics & Communication Engineering (ECE)">ECE - Electronics & Communication</option>
+                    <option value="Electronics & Computer Control (ECC)">ECC - Electronics & Computer Control</option>
+                    <option value="Electrical & Electronics Engineering (EEE)">EEE - Electrical & Electronics</option>
                   </select>
                 </div>
               </div>
