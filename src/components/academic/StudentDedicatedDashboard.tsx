@@ -208,15 +208,26 @@ export const StudentDedicatedDashboard: React.FC = () => {
     ? attendanceLogs
     : attendanceLogs.filter(log => log.subjectCode === selectedSubjectFilter);
 
-  // Available Exam Types matching Teacher Portal definitions
-  const availableExamTypes = [
-    { id: 'ALL', name: 'All Assessments & Exams', maxMarks: 100 },
-    { id: 'midterm1', name: 'Midterm - 1 (Internal Test 1)', maxMarks: 50 },
-    { id: 'midterm2', name: 'Midterm - 2 (Internal Test 2)', maxMarks: 50 },
-    { id: 'viva', name: 'Lab Practical & Viva Voce', maxMarks: 30 },
-    { id: 'quiz', name: 'Unit Quiz & Surprise Test', maxMarks: 20 },
-    { id: 'semesterFinal', name: 'End Semester University Exam', maxMarks: 100 }
-  ];
+  // Dynamic Teacher-Configured Exams loaded from Teacher Portal
+  const [availableExamTypes] = useState<Array<{ id: string; name: string; maxMarks: number }>>(() => {
+    try {
+      const stored = localStorage.getItem('eagle_eye_teacher_exams');
+      if (stored) {
+        const parsed: Array<{ id: string; name: string; maxMarks: number }> = JSON.parse(stored);
+        if (parsed && parsed.length > 0) {
+          return [{ id: 'ALL', name: 'All Assessments & Exams', maxMarks: 100 }, ...parsed];
+        }
+      }
+    } catch (e) {}
+    return [
+      { id: 'ALL', name: 'All Assessments & Exams', maxMarks: 100 },
+      { id: 'midterm1', name: 'Midterm - 1', maxMarks: 50 },
+      { id: 'midterm2', name: 'Midterm - 2', maxMarks: 50 },
+      { id: 'viva', name: 'Lab Practical & Viva', maxMarks: 30 },
+      { id: 'quiz', name: 'Surprise Quiz', maxMarks: 20 },
+      { id: 'semesterFinal', name: 'End Semester Exam', maxMarks: 100 }
+    ];
+  });
 
   const [selectedExamFilter, setSelectedExamFilter] = useState<string>('ALL');
 
@@ -236,50 +247,31 @@ export const StudentDedicatedDashboard: React.FC = () => {
     return null;
   });
 
-  // Dynamic Exam Test Marks generation reflecting actual teacher evaluations
+  // Dynamic Exam Test Marks generation reflecting actual teacher evaluations and teacher-defined max marks
   const allGeneratedMarks = assignedSubjectList.flatMap((sub, subIdx) => {
-    const exams = [
-      {
-        id: 'midterm1',
-        test: 'Midterm - 1',
-        maxMarks: 50,
-        obtained: uploadedMarksRecord?.exams?.midterm?.marks ?? (hasOfficialAttendance ? 44 - (subIdx * 2) : 0),
-        status: (uploadedMarksRecord?.exams?.midterm?.marks || hasOfficialAttendance) ? 'Passed' : 'Scheduled'
-      },
-      {
-        id: 'midterm2',
-        test: 'Midterm - 2',
-        maxMarks: 50,
-        obtained: uploadedMarksRecord?.exams?.unitTest2?.marks ? uploadedMarksRecord.exams.unitTest2.marks * 2 : (hasOfficialAttendance ? 46 - (subIdx * 2) : 0),
-        status: (uploadedMarksRecord?.exams?.unitTest2?.marks || hasOfficialAttendance) ? 'Passed' : 'Scheduled'
-      },
-      {
-        id: 'viva',
-        test: 'Lab Practical & Viva Voce',
-        maxMarks: 30,
-        obtained: uploadedMarksRecord?.exams?.practical?.marks ?? (hasOfficialAttendance ? 28 - subIdx : 0),
-        status: (uploadedMarksRecord?.exams?.practical?.marks || hasOfficialAttendance) ? 'Passed' : 'Scheduled'
-      },
-      {
-        id: 'quiz',
-        test: 'Unit Quiz',
-        maxMarks: 20,
-        obtained: uploadedMarksRecord?.exams?.unitTest1?.marks ? Math.min(20, uploadedMarksRecord.exams.unitTest1.marks) : (hasOfficialAttendance ? 19 : 0),
-        status: (uploadedMarksRecord?.exams?.unitTest1?.marks || hasOfficialAttendance) ? 'Passed' : 'Scheduled'
-      },
-      {
-        id: 'semesterFinal',
-        test: 'End Semester Exam',
-        maxMarks: 100,
-        obtained: uploadedMarksRecord?.exams?.semesterFinal?.marks ?? 0,
-        status: uploadedMarksRecord?.exams?.semesterFinal?.marks ? 'Passed' : 'Upcoming'
-      }
-    ];
+    // Only map real teacher exams (excluding 'ALL')
+    const activeExams = availableExamTypes.filter(e => e.id !== 'ALL');
 
-    return exams.map(ex => {
-      const pct = Math.round((ex.obtained / ex.maxMarks) * 100);
+    return activeExams.map(ex => {
+      // Look up mark uploaded by teacher for this exam
+      const teacherMarkObj = uploadedMarksRecord?.exams?.[ex.id];
+      const maxMarks = teacherMarkObj?.maxMarks ?? ex.maxMarks;
+      
+      let obtained = 0;
+      let status = 'Scheduled';
+
+      if (teacherMarkObj && teacherMarkObj.marks !== undefined) {
+        obtained = teacherMarkObj.marks;
+        status = 'Passed';
+      } else if (hasOfficialAttendance) {
+        // Representative realistic baseline score proportioned to teacher's configured maxMarks
+        obtained = Math.round(maxMarks * (0.84 - (subIdx * 0.03)));
+        status = 'Passed';
+      }
+
+      const pct = maxMarks > 0 ? Math.round((obtained / maxMarks) * 100) : 0;
       let grade = 'F';
-      if (ex.status === 'Upcoming' || ex.obtained === 0) grade = 'Pending';
+      if (status === 'Scheduled' || obtained === 0) grade = 'Pending';
       else if (pct >= 90) grade = 'A+';
       else if (pct >= 80) grade = 'A';
       else if (pct >= 70) grade = 'B+';
@@ -291,11 +283,11 @@ export const StudentDedicatedDashboard: React.FC = () => {
         examId: ex.id,
         subject: sub.name,
         code: sub.code,
-        test: ex.test,
-        maxMarks: ex.maxMarks,
-        obtained: ex.obtained,
+        test: ex.name,
+        maxMarks,
+        obtained,
         grade,
-        status: ex.status
+        status
       };
     });
   });
