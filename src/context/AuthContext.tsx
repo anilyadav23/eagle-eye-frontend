@@ -204,29 +204,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (payload: { username: string; email: string; password: string; role: UserRole; full_name?: string }): Promise<{ success: boolean; error?: string; message?: string }> => {
-    // Save to local registered users store
-    try {
-      const regList = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
-      const exists = regList.some((u: any) => u.username.toLowerCase() === payload.username.trim().toLowerCase());
-      if (exists) {
-        return { success: false, error: 'Username or email already in use.' };
-      }
+    const cleanUname = payload.username.trim().toLowerCase();
+    const cleanMail = payload.email.trim().toLowerCase();
 
-      const newUserId = `usr-${Date.now()}`;
-      regList.push({
-        id: newUserId,
+    // Prevent overwriting standard pre-configured role profiles
+    if (['hodecc', 'hod', 'teacher', 'admin', 'guard'].includes(cleanUname)) {
+      return { success: false, error: 'That username is reserved for system administrators and faculty.' };
+    }
+
+    // Save or update local registered users store
+    try {
+      const regList: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+      const existingIdx = regList.findIndex(
+        (u: any) => u.username.toLowerCase() === cleanUname || (u.email && u.email.toLowerCase() === cleanMail)
+      );
+
+      const userId = existingIdx >= 0 ? regList[existingIdx].id : `usr-${Date.now()}`;
+      const userRecord = {
+        id: userId,
         username: payload.username.trim(),
         email: payload.email.trim(),
         password: payload.password,
         role: payload.role,
         full_name: payload.full_name?.trim() || payload.username.trim()
-      });
+      };
+
+      if (existingIdx >= 0) {
+        regList[existingIdx] = userRecord;
+      } else {
+        regList.push(userRecord);
+      }
       localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
 
-      // Automatically queue an approval request for HOD and Teacher
-      const approvalList = JSON.parse(localStorage.getItem('eagle_eye_approval_requests') || '[]');
-      approvalList.unshift({
-        id: `REG-REQ-${Date.now()}`,
+      // Automatically queue or refresh an approval request for HOD and Teacher
+      const approvalList: any[] = JSON.parse(localStorage.getItem('eagle_eye_approval_requests') || '[]');
+      const reqIdx = approvalList.findIndex(
+        (r: any) => (r.rollNo && r.rollNo.toLowerCase() === cleanUname) || (r.email && r.email.toLowerCase() === cleanMail)
+      );
+
+      const newApprovalReq = {
+        id: reqIdx >= 0 ? approvalList[reqIdx].id : `REG-REQ-${Date.now()}`,
         studentName: payload.full_name?.trim() || payload.username.trim(),
         rollNo: payload.username.trim(),
         regNo: `REG-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -243,40 +260,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         type: 'New Student Admission & Biometric Clearance',
         status: 'Pending',
         reason: `Self-registration profile for ${payload.full_name || payload.username} (${payload.username}) awaiting clearance.`
-      });
+      };
+
+      if (reqIdx >= 0) {
+        approvalList[reqIdx] = newApprovalReq;
+      } else {
+        approvalList.unshift(newApprovalReq);
+      }
       localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(approvalList));
     } catch (e) {
       console.warn('Failed saving local registration and approval request', e);
     }
 
+    // Try backend registration if available
     try {
       const apiBase = getApiBase();
-      const res = await fetch(`${apiBase}/api/auth/register`, {
+      await fetch(`${apiBase}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        // If backend returned error but local queued, return approval message
-        return {
-          success: true,
-          message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.'
-        };
-      }
-
-      const data = await res.json();
-      return { 
-        success: true, 
-        message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.' 
-      };
     } catch (err: any) {
-      return {
-        success: true,
-        message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.'
-      };
+      // Backend request optional in client-first workflow
     }
+
+    return {
+      success: true,
+      message: 'Student profile created! Approval request has been sent to HOD and Teacher for verification.'
+    };
   };
 
   const logout = () => {
