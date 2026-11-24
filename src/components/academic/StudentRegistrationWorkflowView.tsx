@@ -3,16 +3,18 @@ import {
   UserPlus, Upload, CheckCircle2, AlertCircle, 
   Camera, FileText, Send, Check, ShieldCheck 
 } from 'lucide-react';
+import { useSecurity } from '../../context/SecurityContext';
 
 export const StudentRegistrationWorkflowView: React.FC = () => {
+  const { submitApprovalRequest } = useSecurity();
   const [name, setName] = useState('Arjun Kumar');
   const [mobile, setMobile] = useState('9876543210');
   const [email, setEmail] = useState('arjun.kumar@campus.edu');
-  const [branch, setBranch] = useState('Computer Science');
+  const [branch, setBranch] = useState('Electronics & Communication');
   const [year, setYear] = useState('2nd Year');
   const [semester, setSemester] = useState('3rd Semester');
   const [section, setSection] = useState('A');
-  const [rollNo, setRollNo] = useState('CS23A001');
+  const [rollNo, setRollNo] = useState('EC23A001');
   const [registrationNo, setRegistrationNo] = useState('REG2025001');
   const [gender, setGender] = useState('Male');
 
@@ -25,6 +27,21 @@ export const StudentRegistrationWorkflowView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    submitApprovalRequest({
+      id: `REG-REQ-${Date.now()}`,
+      studentName: name,
+      rollNo: rollNo,
+      regNo: registrationNo,
+      branch: branch,
+      year: year,
+      semester: semester,
+      section: section,
+      email: email,
+      mobile: mobile,
+      photos: uploadedPhotos,
+      type: 'New Student Admission & Biometric Clearance',
+      reason: `Admissions clearance submission for ${name} (${rollNo})`
+    });
     setIsSubmitted(true);
   };
 

@@ -8,6 +8,25 @@ import {
 } from '../types';
 import { getApiBase, getWsUrl, getCameraCaptureUrl } from '../config/api';
 
+// Pending Approval Request Interface for HOD & Student Onboarding Workflows
+export interface PendingApprovalRequest {
+  id: string;
+  studentName: string;
+  rollNo: string;
+  regNo: string;
+  branch: string;
+  year: string;
+  semester: string;
+  section: string;
+  email: string;
+  mobile: string;
+  submittedAt: string;
+  photos: string[];
+  type: string;
+  status: string;
+  reason?: string;
+}
+
 interface SecurityContextType {
   stats: BuildingStats;
   persons: Person[];
@@ -30,6 +49,10 @@ interface SecurityContextType {
   isConnectCamModalOpen: boolean;
   unknownDetectionData: { trackId: string; photoUrl: string } | null;
   isConnected: boolean;
+  // Approvals Workflow State & Actions
+  approvalRequests: PendingApprovalRequest[];
+  submitApprovalRequest: (request: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => void;
+  updateApprovalRequestStatus: (id: string, status: 'Approved' | 'Rejected') => void;
   // Actions
   setSelectedPersonId: (id: string) => void;
   setSelectedCameraId: (id: string | null) => void;
@@ -219,6 +242,110 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [isConnectCamModalOpen, setIsConnectCamModalOpen] = useState<boolean>(false);
   const [unknownDetectionData, setUnknownDetectionData] = useState<{ trackId: string; photoUrl: string } | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+
+  // Default initial approval requests (cached in localStorage so user submissions persist)
+  const [approvalRequests, setApprovalRequests] = useState<PendingApprovalRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('eagle_eye_approval_requests');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // fallback
+    }
+    return [
+      {
+        id: 'REQ-2026-001',
+        studentName: 'Arjun Kumar',
+        rollNo: 'CS23A001',
+        regNo: 'REG2025001',
+        branch: 'Electronics & Communication',
+        year: '2nd Year',
+        semester: '3rd Semester',
+        section: 'A',
+        email: 'arjun.kumar@campus.edu',
+        mobile: '9876543210',
+        submittedAt: '10:34 AM Today',
+        photos: [
+          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=face',
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+        ],
+        type: 'New Registration',
+        status: 'Pending'
+      },
+      {
+        id: 'REQ-2026-002',
+        studentName: 'Priya Sharma',
+        rollNo: '21ECE002',
+        regNo: 'REG2024098',
+        branch: 'Electronics & Communication',
+        year: '3rd Year',
+        semester: '5th Semester',
+        section: 'B',
+        email: 'priya.s@campus.edu',
+        mobile: '9811224455',
+        submittedAt: '09:40 AM Today',
+        photos: [
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face'
+        ],
+        type: 'Photo Update Request',
+        status: 'Pending'
+      },
+      {
+        id: 'REQ-2026-003',
+        studentName: 'Karan Malhotra',
+        rollNo: '22ECE045',
+        regNo: 'REG2024112',
+        branch: 'Electronics & Communication',
+        year: '2nd Year',
+        semester: '3rd Semester',
+        section: 'A',
+        email: 'karan.m@campus.edu',
+        mobile: '9844556677',
+        submittedAt: '08:15 AM Today',
+        photos: [
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
+        ],
+        type: 'Elective Course Exemption',
+        status: 'Pending'
+      }
+    ];
+  });
+
+  const submitApprovalRequest = (newReq: Omit<PendingApprovalRequest, 'id' | 'submittedAt' | 'status'> & { id?: string; submittedAt?: string; status?: string }) => {
+    const formatted: PendingApprovalRequest = {
+      id: newReq.id || `REQ-${Date.now()}`,
+      studentName: newReq.studentName,
+      rollNo: newReq.rollNo || 'N/A',
+      regNo: newReq.regNo || `REG-${Math.floor(100000 + Math.random() * 900000)}`,
+      branch: newReq.branch || 'Electronics & Communication',
+      year: newReq.year || '2nd Year',
+      semester: newReq.semester || '3rd Semester',
+      section: newReq.section || 'A',
+      email: newReq.email || '',
+      mobile: newReq.mobile || '',
+      submittedAt: newReq.submittedAt || 'Just now',
+      photos: newReq.photos || ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'],
+      type: newReq.type || 'Student Request',
+      status: newReq.status || 'Pending',
+      reason: newReq.reason
+    };
+    setApprovalRequests(prev => {
+      const updated = [formatted, ...prev];
+      try {
+        localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const updateApprovalRequestStatus = (id: string, status: 'Approved' | 'Rejected') => {
+    setApprovalRequests(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+      try {
+        localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -790,7 +917,10 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       addRoom,
       deleteRoom,
       uploadBlueprint,
-      saveBlueprint
+      saveBlueprint,
+      approvalRequests,
+      submitApprovalRequest,
+      updateApprovalRequestStatus
     }}>
       {children}
     </SecurityContext.Provider>

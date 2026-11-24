@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export const StudentDedicatedDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { approvalRequests, submitApprovalRequest } = useSecurity();
   const [activeTab, setActiveTab] = useState<'overview' | 'timetable' | 'marks' | 'requests'>('overview');
   
   // Target percentage calculator
@@ -37,26 +38,31 @@ export const StudentDedicatedDashboard: React.FC = () => {
     { subject: 'Data Structures', test: 'Unit Test 1', marks: '23/25', grade: 'A' }
   ];
 
-  // Requests state
+  // Requests state linked to global Approval Queue
   const [requestType, setRequestType] = useState('Medical Leave Request');
   const [requestReason, setRequestReason] = useState('');
-  const [submittedRequests, setSubmittedRequests] = useState([
-    { id: 'REQ-01', type: 'Add Elective: Machine Learning', date: 'Yesterday', status: 'Approved' },
-    { id: 'REQ-02', type: 'Medical Leave (Fever): 2 Days', date: 'Today', status: 'Pending' }
-  ]);
+
+  // Filter requests submitted by this student or show recent requests
+  const submittedRequests = approvalRequests;
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
     if (!requestReason) return;
-    setSubmittedRequests(prev => [
-      {
-        id: `REQ-${Date.now()}`,
-        type: `${requestType}: ${requestReason}`,
-        date: 'Today',
-        status: 'Pending'
-      },
-      ...prev
-    ]);
+    submitApprovalRequest({
+      id: `REQ-${Date.now()}`,
+      studentName: user?.full_name || 'Rahul Sharma',
+      rollNo: 'EC23A001',
+      regNo: 'REG2025001',
+      branch: 'Electronics & Communication',
+      year: '2nd Year',
+      semester: '3rd Semester',
+      section: 'A',
+      email: user?.email || 'rahul.s@campus.edu',
+      mobile: '9876543210',
+      photos: ['https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face'],
+      type: requestType,
+      reason: requestReason
+    });
     setRequestReason('');
   };
 

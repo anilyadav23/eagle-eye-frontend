@@ -30,78 +30,22 @@ interface HODDedicatedDashboardProps {
 }
 
 export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () => {
-  const { attendanceRecords, persons, cameras } = useSecurity();
+  const { attendanceRecords, persons, cameras, approvalRequests, updateApprovalRequestStatus } = useSecurity();
   const { user } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'attendance' | 'timetable' | 'camerawall'>('overview');
   const [filterYear, setFilterYear] = useState('3');
   const [filterSection, setFilterSection] = useState('A');
   const [filterSubject, setFilterSubject] = useState('DBMS');
 
-  // Registration approvals queue
-  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([
-    {
-      id: 'REQ-2026-001',
-      studentName: 'Arjun Kumar',
-      rollNo: 'CS23A001',
-      regNo: 'REG2025001',
-      branch: 'Computer Science',
-      year: '2nd Year',
-      semester: '3rd Semester',
-      section: 'A',
-      email: 'arjun.kumar@campus.edu',
-      mobile: '9876543210',
-      submittedAt: '10:34 AM Today',
-      photos: [
-        'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-      ],
-      type: 'New Registration',
-      status: 'Pending'
-    },
-    {
-      id: 'REQ-2026-002',
-      studentName: 'Priya Sharma',
-      rollNo: '21CSE002',
-      regNo: 'REG2024098',
-      branch: 'Computer Science',
-      year: '3rd Year',
-      semester: '5th Semester',
-      section: 'B',
-      email: 'priya.s@campus.edu',
-      mobile: '9811224455',
-      submittedAt: '09:40 AM Today',
-      photos: [
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face'
-      ],
-      type: 'Photo Update Request',
-      status: 'Pending'
-    },
-    {
-      id: 'REQ-2026-003',
-      studentName: 'Karan Malhotra',
-      rollNo: '22CSE045',
-      regNo: 'REG2024112',
-      branch: 'Computer Science',
-      year: '2nd Year',
-      semester: '3rd Semester',
-      section: 'A',
-      email: 'karan.m@campus.edu',
-      mobile: '9844556677',
-      submittedAt: '08:15 AM Today',
-      photos: [
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
-      ],
-      type: 'Add Subject (Machine Learning)',
-      status: 'Pending'
-    }
-  ]);
+  // Shared reactive registration & clearance approvals queue
+  const pendingRequests = approvalRequests;
 
   const handleApprove = (id: string) => {
-    setPendingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+    updateApprovalRequestStatus(id, 'Approved');
   };
 
   const handleReject = (id: string) => {
-    setPendingRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Rejected' } : r));
+    updateApprovalRequestStatus(id, 'Rejected');
   };
 
   // Timetable schedule matrix
