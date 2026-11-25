@@ -90,12 +90,16 @@ const CameraCard: React.FC<{
     box: { x: number; y: number; width: number; height: number };
     timestamp: string;
     marked: boolean;
+    photoUrl?: string;
   } | null>(null);
 
-  // Optical detection mode: supports detecting registered enrolled student vs not verified intruder/unregistered
-  const [simulatedDetectionMode, setSimulatedDetectionMode] = useState<'REGISTERED' | 'NOT_VERIFIED'>('REGISTERED');
+  // Optical detection mode: supports detecting specific registered enrolled student vs not verified intruder/unregistered
+  const [simulatedDetectionMode, setSimulatedDetectionMode] = useState<string>('AUTO'); // 'AUTO' | 'NOT_VERIFIED' | or specific rollNo
 
   const { markAttendance, approvalRequests } = useSecurity();
+
+  // All approved students currently enrolled in the department
+  const approvedStudents = approvalRequests.filter(r => r.status === 'Approved');
 
   // Sync with active timetable
   const activeClass = getActiveSlotForRoom(cam.room);
@@ -157,43 +161,13 @@ const CameraCard: React.FC<{
         const now = new Date();
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-        if (simulatedDetectionMode === 'REGISTERED') {
-          // Resolve enrolled student from approvalRequests
-          const keshav = approvalRequests.find(r => r.rollNo.toUpperCase() === '24UECC8024');
-          const studentName = keshav ? keshav.studentName : 'Keshav Nagar';
-          const studentRoll = keshav ? keshav.rollNo : '24UECC8024';
-
-          setDetectedStudent({
-            name: studentName,
-            rollNo: studentRoll,
-            isVerified: true,
-            confidence: +(0.96 + Math.random() * 0.03).toFixed(2),
-            box: {
-              x: 28 + Math.floor(Math.random() * 4),
-              y: 20 + Math.floor(Math.random() * 4),
-              width: 44,
-              height: 52
-            },
-            timestamp: timeStr,
-            marked: true
-          });
-
-          // Auto-mark attendance with actual current clock time & room
-          const activeSubject = activeClass.slot?.subjectCode ? `${activeClass.slot.subjectCode} - ${activeClass.slot.subjectName}` : '7ECC41A - CCDN';
-          markAttendance(
-            studentRoll,
-            'Verified',
-            `Optical AI face vector verified at ${cam.name} (${cam.room})`,
-            activeSubject,
-            cam.room
-          ).catch(() => { });
-        } else {
+        if (simulatedDetectionMode === 'NOT_VERIFIED') {
           // If unregistered student/person came in front of camera
           setDetectedStudent({
             name: 'NOT VERIFIED USER',
             rollNo: 'UNREGISTERED FACE',
             isVerified: false,
-            confidence: 0.38,
+            confidence: +(0.32 + Math.random() * 0.08).toFixed(2),
             box: {
               x: 30 + Math.floor(Math.random() * 4),
               y: 22 + Math.floor(Math.random() * 4),
@@ -203,6 +177,55 @@ const CameraCard: React.FC<{
             timestamp: timeStr,
             marked: false
           });
+        } else {
+          // Identify matching enrolled student based on simulatedDetectionMode (specific rollNo or first approved)
+          let targetStudent = approvedStudents.find(s => s.rollNo.toUpperCase() === simulatedDetectionMode.toUpperCase());
+          if (!targetStudent && approvedStudents.length > 0) {
+            targetStudent = approvedStudents[0];
+          }
+
+          if (targetStudent) {
+            const studentName = targetStudent.studentName;
+            const studentRoll = targetStudent.rollNo;
+            const studentPhoto = targetStudent.photos?.[0] || '/students/24UECC8024_face.jpg';
+
+            setDetectedStudent({
+              name: studentName,
+              rollNo: studentRoll,
+              isVerified: true,
+              confidence: +(0.95 + Math.random() * 0.04).toFixed(2),
+              box: {
+                x: 28 + Math.floor(Math.random() * 4),
+                y: 20 + Math.floor(Math.random() * 4),
+                width: 44,
+                height: 52
+              },
+              timestamp: timeStr,
+              marked: true,
+              photoUrl: studentPhoto
+            });
+
+            // Auto-mark attendance with actual current clock time & room
+            const activeSubject = activeClass.slot?.subjectCode ? `${activeClass.slot.subjectCode} - ${activeClass.slot.subjectName}` : '7ECC41A - CCDN';
+            markAttendance(
+              studentRoll,
+              'Verified',
+              `Optical AI face vector verified at ${cam.name} (${cam.room})`,
+              activeSubject,
+              cam.room
+            ).catch(() => { });
+          } else {
+            // No enrolled students exist in the system yet
+            setDetectedStudent({
+              name: 'NOT VERIFIED USER',
+              rollNo: 'NO ENROLLED USERS',
+              isVerified: false,
+              confidence: 0.25,
+              box: { x: 30, y: 22, width: 42, height: 50 },
+              timestamp: timeStr,
+              marked: false
+            });
+          }
         }
       }, 4000);
     } else {
@@ -212,7 +235,7 @@ const CameraCard: React.FC<{
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [isConnected, simulatedDetectionMode, cam.name, cam.room, activeClass.slot, approvalRequests]);
+  }, [isConnected, simulatedDetectionMode, cam.name, cam.room, activeClass.slot, approvedStudents]);
 
   const handleSaveEdit = () => {
     onUpdate(cam.camera_id, {
@@ -294,16 +317,22 @@ const CameraCard: React.FC<{
                   {cam.room}
                 </span>
                 <span>•</span>
-                <button
-                  onClick={() => setSimulatedDetectionMode(m => m === 'REGISTERED' ? 'NOT_VERIFIED' : 'REGISTERED')}
-                  title="Toggle between Enrolled Student vs Unregistered Person in camera view"
-                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold border transition-all ${simulatedDetectionMode === 'REGISTERED'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                    : 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
-                    }`}
-                >
-                  {simulatedDetectionMode === 'REGISTERED' ? 'AI: Enrolled Face Mode' : 'AI: Unregistered Face Mode'}
-                </button>
+                <div className="flex items-center space-x-1">
+                  <span className="text-[9px] text-slate-400">Match Face:</span>
+                  <select
+                    value={simulatedDetectionMode}
+                    onChange={e => setSimulatedDetectionMode(e.target.value)}
+                    className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[9px] text-sky-300 font-bold font-mono focus:border-sky-400"
+                  >
+                    <option value="AUTO">Auto Detect Enrolled</option>
+                    {approvedStudents.map(s => (
+                      <option key={s.rollNo} value={s.rollNo}>
+                        Enrolled: {s.studentName} ({s.rollNo})
+                      </option>
+                    ))}
+                    <option value="NOT_VERIFIED">⚠️ Unregistered / Intruder Face</option>
+                  </select>
+                </div>
               </div>
             </>
           )}
@@ -407,6 +436,13 @@ const CameraCard: React.FC<{
               ? 'bg-emerald-950/95 border-emerald-500 text-emerald-300'
               : 'bg-red-950/95 border-red-500 text-red-300'
               }`}>
+              {detectedStudent.isVerified && detectedStudent.photoUrl && (
+                <img
+                  src={detectedStudent.photoUrl}
+                  alt={detectedStudent.name}
+                  className="w-4 h-4 rounded-full object-cover border border-emerald-400"
+                />
+              )}
               <span className={`w-1.5 h-1.5 rounded-full ${detectedStudent.isVerified ? 'bg-emerald-400 animate-ping' : 'bg-red-500'}`}></span>
               <span>{detectedStudent.name}</span>
               <span className="text-[9px] font-normal">({(detectedStudent.confidence * 100).toFixed(0)}%)</span>

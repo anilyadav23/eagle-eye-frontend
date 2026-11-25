@@ -28,14 +28,17 @@ interface PendingRequest {
   status: string;
 }
 
+import { NavTab } from '../../types';
+
 interface HODDedicatedDashboardProps {
-  onNavigateTab?: (tab: string) => void;
+  onNavigateTab?: (tab: NavTab) => void;
 }
 
-export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () => {
+export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = ({ onNavigateTab }) => {
   const { attendanceRecords, persons, cameras, approvalRequests, updateApprovalRequestStatus, deleteApprovalRequest, deleteUserProfile } = useSecurity();
   const { user } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'timetable' | 'camerawall'>('overview');
+  // Sub-navigation tabs without Audit & Records
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'students' | 'timetable' | 'camerawall'>('overview');
   const [filterYear, setFilterYear] = useState('4');
   const [filterSection, setFilterSection] = useState('A');
   const [filterSubject, setFilterSubject] = useState('All');
@@ -181,9 +184,10 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
         </div>
 
         {/* Sub-navigation tabs without Audit & Records */}
-        <div className="flex items-center space-x-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+        <div className="flex items-center space-x-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 flex-wrap gap-1">
           {[
             { id: 'overview', label: 'Department Overview' },
+            { id: 'students', label: `Enrolled Students (${approvalRequests.filter(r => r.status === 'Approved').length})` },
             { id: 'approvals', label: `Approvals Queue (${pendingRequests.filter(r => r.status === 'Pending').length})` },
             { id: 'timetable', label: 'Department Timetable' },
             { id: 'camerawall', label: 'Classroom Surveillance' },
@@ -350,6 +354,81 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
               <strong className="block text-indigo-300">Department Governance Note:</strong>
               Approvals instantly update the Vision Embedding Vector in the Face Recognition Engine.
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-tab: Enrolled Students Directory */}
+      {activeSubTab === 'students' && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-indigo-400" />
+                Department Enrolled Students & Biometric Face Assets
+              </h2>
+              <p className="text-xs text-slate-400">
+                All authorized students registered by HOD or approved through Admissions KYC with enrolled facial photos
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigateTab ? onNavigateTab('registration') : window.location.hash = '#registration'}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-sky-500/20 flex items-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Enroll New Student with Photos</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {approvalRequests.filter(r => r.status === 'Approved').map(student => (
+              <div key={student.id} className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition-all space-y-3">
+                <div className="flex items-start space-x-3">
+                  <div className="relative">
+                    <img
+                      src={student.photos?.[0] || '/students/24UECC8024_face.jpg'}
+                      alt={student.studentName}
+                      className="w-14 h-14 rounded-xl object-cover border border-slate-700 shadow-md"
+                    />
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950" title="Biometrically Active" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-white text-sm truncate">{student.studentName}</h4>
+                    <div className="text-xs font-mono text-sky-400 font-semibold">{student.rollNo}</div>
+                    <div className="text-[11px] text-slate-400 truncate">{student.branch}</div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800/80 space-y-1 text-[11px] font-mono text-slate-300">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Year / Semester:</span>
+                    <span className="font-semibold text-slate-200">{student.year} ({student.semester})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Section:</span>
+                    <span className="font-semibold text-slate-200">{student.section}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">KYC Photos Enrolled:</span>
+                    <span className="font-semibold text-emerald-400">{student.photos?.length || 1} Photo(s)</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-bold">
+                    ACTIVE ENROLLEE
+                  </span>
+                  <button
+                    onClick={() => handleDeleteProfile(student.rollNo || student.id, student.studentName)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors text-xs flex items-center gap-1 font-mono"
+                    title="Delete Student Profile"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

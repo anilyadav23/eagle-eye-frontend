@@ -84,7 +84,7 @@ const AppContent: React.FC = () => {
       if (activeTab === 'cameras') return <CameraMatrixView />;
       if (activeTab === 'map') return <InteractiveFloorMap onSelectPerson={() => setActiveTab('tracking')} onOpenStudio={() => setActiveTab('blueprint')} />;
       if (activeTab === 'analytics') return <AnalyticsDashboard />;
-      return <HODDedicatedDashboard />;
+      return <HODDedicatedDashboard onNavigateTab={setActiveTab} />;
     }
 
     // Default: Admin / Security / System Master
