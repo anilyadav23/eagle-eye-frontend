@@ -264,8 +264,33 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                 </div>
               </div>
 
-              {/* Department & Branch Separate Fields */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Department & Branch Fields: Teachers only select Department; Students select Department & Branch */}
+              {regRole === 'Student' ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Department</label>
+                    <select
+                      value={regDepartment}
+                      onChange={(e) => setRegDepartment(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                    >
+                      <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Branch</label>
+                    <select
+                      value={regBranch}
+                      onChange={(e) => setRegBranch(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
+                    >
+                      <option value="Electronics & Communication Engineering (ECE)">Electronics & Communication Engineering (ECE)</option>
+                      <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
+                      <option value="Electrical & Electronics Engineering (EEE)">Electrical & Electronics Engineering (EEE)</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Department</label>
                   <select
@@ -275,20 +300,11 @@ export const LoginPage: React.FC<LoginModalProps> = ({ onSuccess }) => {
                   >
                     <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
                   </select>
+                  <p className="text-[10px] text-slate-400 font-mono mt-1">
+                    * Faculty profiles only require department selection. Additional contact/academic details can be updated anytime in your profile section.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1 font-mono">Branch</label>
-                  <select
-                    value={regBranch}
-                    onChange={(e) => setRegBranch(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-sky-500 font-mono"
-                  >
-                    <option value="Electronics & Communication Engineering (ECE)">Electronics & Communication Engineering (ECE)</option>
-                    <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
-                    <option value="Electrical & Electronics Engineering (EEE)">Electrical & Electronics Engineering (EEE)</option>
-                  </select>
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

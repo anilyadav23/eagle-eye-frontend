@@ -73,19 +73,121 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // Standard Official Faculty Profiles from Department Timetable
+  // Faculty ID is also username, default password is '123456'
+  const TIMETABLE_FACULTY_USERS: Record<string, { pass: string[]; user: AuthUser }> = {
+    // 1. Lata Vaishnav (LTV)
+    ltv: {
+      pass: ['123456', 'ltv123'],
+      user: {
+        id: 'usr-fac-ltv',
+        username: 'LTV',
+        email: 'ltv@campus.edu',
+        role: 'Teacher',
+        full_name: 'Lata Vaishnav',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 2. Kapoor Chand (KPC)
+    kpc: {
+      pass: ['123456', 'kpc123'],
+      user: {
+        id: 'usr-fac-kpc',
+        username: 'KPC',
+        email: 'kpc@campus.edu',
+        role: 'Teacher',
+        full_name: 'Kapoor Chand',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 3. Khushbu Mehta (KSM)
+    ksm: {
+      pass: ['123456', 'ksm123'],
+      user: {
+        id: 'usr-fac-ksm',
+        username: 'KSM',
+        email: 'ksm@campus.edu',
+        role: 'Teacher',
+        full_name: 'Khushbu Mehta',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 4. Dhirendra Sharma (DS)
+    ds: {
+      pass: ['123456', 'ds123'],
+      user: {
+        id: 'usr-fac-ds',
+        username: 'DS',
+        email: 'ds@campus.edu',
+        role: 'Teacher',
+        full_name: 'Dhirendra Sharma',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 5. Kapil Parihar (KP / HOD)
+    kp: {
+      pass: ['123456', 'kp123', 'Anil@2026'],
+      user: {
+        id: 'usr-fac-kp',
+        username: 'KP',
+        email: 'kp@campus.edu',
+        role: 'Teacher',
+        full_name: 'Kapil Parihar',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 6. Naginder Singh (NS / TT-Incharge)
+    ns: {
+      pass: ['123456', 'ns123'],
+      user: {
+        id: 'usr-fac-ns',
+        username: 'NS',
+        email: 'ns@campus.edu',
+        role: 'Teacher',
+        full_name: 'Naginder Singh',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // 7. Yazdan Khan (YK)
+    yk: {
+      pass: ['123456', 'yk123'],
+      user: {
+        id: 'usr-fac-yk',
+        username: 'YK',
+        email: 'yk@campus.edu',
+        role: 'Teacher',
+        full_name: 'Yazdan Khan',
+        department: 'Electronics & Communication Engineering'
+      }
+    },
+    // Generic Teacher demo account fallback
+    teacher: {
+      pass: ['123456', 'teacher123'],
+      user: {
+        id: 'usr-teacher',
+        username: 'teacher',
+        email: 'teacher@campus.edu',
+        role: 'Teacher',
+        full_name: 'Lata Vaishnav (Faculty)',
+        department: 'Electronics & Communication Engineering'
+      }
+    }
+  };
+
   // Emergency root credential fallback for HOD if backend is offline or static hosting
   const DEMO_FALLBACK_USERS: Record<string, { pass: string[]; user: AuthUser }> = {
+    ...TIMETABLE_FACULTY_USERS,
     hodecc: {
-      pass: ['Anil@2026', 'anil@2026', 'hod123'],
-      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
+      pass: ['Anil@2026', 'anil@2026', 'hod123', '123456'],
+      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'Prof. Kapil Parihar (HOD)', department: 'Electronics & Communication Engineering' }
     },
     ecehod: {
-      pass: ['Anil@2026', 'anil@2026', 'hod123'],
-      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
+      pass: ['Anil@2026', 'anil@2026', 'hod123', '123456'],
+      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'Prof. Kapil Parihar (HOD)', department: 'Electronics & Communication Engineering' }
     },
     hod: {
-      pass: ['Anil@2026', 'anil@2026', 'hod123'],
-      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'ECEHOD' }
+      pass: ['Anil@2026', 'anil@2026', 'hod123', '123456'],
+      user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'Prof. Kapil Parihar (HOD)', department: 'Electronics & Communication Engineering' }
     }
   };
 
