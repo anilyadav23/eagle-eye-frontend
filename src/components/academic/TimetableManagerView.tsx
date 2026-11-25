@@ -3,68 +3,29 @@ import {
   Calendar, Clock, BookOpen, Users, Plus, 
   MapPin, CheckCircle2, ChevronRight, Video, X
 } from 'lucide-react';
+import { OFFICIAL_TIMETABLES, getTimetableSlots, TimetablePeriod } from '../../data/timetableCatalog';
 
 export const TimetableManagerView: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState('Monday');
-  const [selectedYear, setSelectedYear] = useState('2nd Year');
+  const [selectedBranch, setSelectedBranch] = useState('Electronics & Computer Control (ECC)');
+  const [selectedYear, setSelectedYear] = useState('4th Year');
+  const [selectedSemester, setSelectedSemester] = useState('7th Semester');
   const [selectedSection, setSelectedSection] = useState('Section A');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const [scheduleSlots, setScheduleSlots] = useState([
-    {
-      time: '09:00 AM - 10:00 AM',
-      courseCode: 'CS101',
-      courseName: 'Database Management Systems (DBMS)',
-      room: 'Room 101',
-      teacher: 'Dr. Meena',
-      type: 'Regular Class',
-      status: 'Completed',
-      expectedStudents: 48,
-      camera: 'CAM-001'
-    },
-    {
-      time: '10:00 AM - 11:00 AM',
-      courseCode: 'CS102',
-      courseName: 'Operating Systems (OS)',
-      room: 'Room 102',
-      teacher: 'Prof. Sharma',
-      type: 'Regular Class',
-      status: 'Completed',
-      expectedStudents: 45,
-      camera: 'CAM-002'
-    },
-    {
-      time: '01:00 PM - 02:00 PM',
-      courseCode: 'CS201',
-      courseName: 'Design & Analysis of Algorithms (DAA)',
-      room: 'Room 201',
-      teacher: 'Dr. Rajesh Iyer',
-      type: 'Combined Class (Sec A + B)',
-      status: 'In-Progress',
-      expectedStudents: 90,
-      camera: 'CAM-021'
-    },
-    {
-      time: '02:00 PM - 03:00 PM',
-      courseCode: 'CS202',
-      courseName: 'Computer Networks (CN)',
-      room: 'Room 202',
-      teacher: 'Prof. Anjali Sen',
-      type: 'Regular Class',
-      status: 'Upcoming',
-      expectedStudents: 52,
-      camera: 'CAM-015'
-    }
-  ]);
-
   // New Class Form State
-  const [newCourseName, setNewCourseName] = useState('Advanced Machine Learning');
-  const [newCourseCode, setNewCourseCode] = useState('CS308');
-  const [newTime, setNewTime] = useState('03:00 PM - 04:00 PM');
-  const [newRoom, setNewRoom] = useState('Lecture Hall 101');
-  const [newTeacher, setNewTeacher] = useState('Dr. Rajesh Iyer');
-  const [newType, setNewType] = useState('Extra Class');
-  const [newExpectedStudents, setNewExpectedStudents] = useState(50);
+  const [newCourseName, setNewCourseName] = useState('Computer Communication & Data Networks');
+  const [newCourseCode, setNewCourseCode] = useState('7ECC41A');
+  const [newTime, setNewTime] = useState('10:00 AM - 10:55 AM');
+  const [newRoom, setNewRoom] = useState('Room EC-6');
+  const [newTeacher, setNewTeacher] = useState('Lata Vaishnav (LTV)');
+  const [newType, setNewType] = useState('Theory');
+  const [newExpectedStudents, setNewExpectedStudents] = useState(48);
+
+  const [extraSlots, setExtraSlots] = useState<TimetablePeriod[]>([]);
+
+  const defaultSlots: TimetablePeriod[] = getTimetableSlots(selectedBranch, selectedSemester, selectedDay);
+  const activeSlots: TimetablePeriod[] = [...defaultSlots, ...extraSlots];
 
   return (
     <div className="space-y-6">
@@ -105,17 +66,37 @@ export const TimetableManagerView: React.FC = () => {
 
       {/* Filter Ribbon & Actions */}
       <div className="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
           <span className="font-semibold text-slate-400">Filter View:</span>
+          
+          <select 
+            value={selectedBranch}
+            onChange={(e) => setSelectedBranch(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 font-mono"
+          >
+            <option value="Electronics & Computer Control (ECC)">Electronics & Computer Control (ECC)</option>
+            <option value="Electronics & Communication Engineering (ECE)">Electronics & Communication (ECE)</option>
+            <option value="Electrical & Electronics Engineering (EEE)">Electrical & Electronics (EEE)</option>
+          </select>
+
           <select 
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             className="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5"
           >
-            <option value="1st Year">1st Year</option>
-            <option value="2nd Year">2nd Year</option>
-            <option value="3rd Year">3rd Year</option>
-            <option value="4th Year">4th Year</option>
+            <option value="4th Year">4th Year (B.E. IV Year)</option>
+            <option value="3rd Year">3rd Year (B.E. III Year)</option>
+            <option value="2nd Year">2nd Year (B.E. II Year)</option>
+          </select>
+
+          <select 
+            value={selectedSemester}
+            onChange={(e) => setSelectedSemester(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5"
+          >
+            <option value="7th Semester">7th Semester (Odd 2026-27)</option>
+            <option value="5th Semester">5th Semester</option>
+            <option value="3rd Semester">3rd Semester</option>
           </select>
 
           <select 
@@ -125,18 +106,13 @@ export const TimetableManagerView: React.FC = () => {
           >
             <option value="Section A">Section A</option>
             <option value="Section B">Section B</option>
-            <option value="Section C">Section C</option>
           </select>
         </div>
 
         <div className="flex items-center space-x-2">
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Extra / Combined Class</span>
-          </button>
+          <span className="text-xs font-mono text-sky-400 bg-sky-500/10 px-3 py-1.5 rounded-xl border border-sky-500/30">
+            W.E.F. 01.08.2026 • Room EC-6 / EC-11 / L-5
+          </span>
         </div>
       </div>
 
@@ -219,18 +195,17 @@ export const TimetableManagerView: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                setScheduleSlots(prev => [
+                setExtraSlots(prev => [
                   ...prev,
                   {
-                    time: newTime,
-                    courseCode: newCourseCode,
-                    courseName: newCourseName,
+                    periodNumber: defaultSlots.length + prev.length + 1,
+                    timeSlot: newTime,
+                    subjectCode: newCourseCode,
+                    subjectName: newCourseName,
                     room: newRoom,
-                    teacher: newTeacher,
-                    type: newType,
-                    status: 'Scheduled',
-                    expectedStudents: newExpectedStudents,
-                    camera: 'CAM-021'
+                    facultyName: newTeacher,
+                    facultyCode: 'FAC',
+                    type: newType.includes('Lab') ? 'Lab' : newType.includes('Project') ? 'Project' : 'Theory'
                   }
                 ]);
                 setIsAddModalOpen(false);
@@ -245,56 +220,67 @@ export const TimetableManagerView: React.FC = () => {
 
       {/* Timetable Schedule Cards (Page 3 & 7) */}
       <div className="space-y-3">
-        {scheduleSlots.map((slot, idx) => (
-          <div key={idx} className="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-4 hover:border-slate-700 transition-all">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center min-w-[120px]">
-                <Clock className="w-4 h-4 text-sky-400 mx-auto mb-1" />
-                <div className="font-mono text-xs text-white font-bold">{slot.time}</div>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white text-sm">{slot.courseName}</span>
-                  <span className="font-mono text-xs font-bold text-sky-400">({slot.courseCode})</span>
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                    slot.type.includes('Combined') ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
-                    slot.type.includes('Extra') ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                    'bg-slate-800 text-slate-300'
-                  }`}>
-                    {slot.type}
-                  </span>
-                </div>
-
-                <div className="text-xs text-slate-400 mt-1 flex items-center gap-4">
-                  <span className="flex items-center gap-1 text-slate-300">
-                    <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                    {slot.room}
-                  </span>
-                  <span>Faculty: <strong className="text-slate-200">{slot.teacher}</strong></span>
-                  <span className="flex items-center gap-1 font-mono text-slate-300">
-                    <Users className="w-3.5 h-3.5 text-indigo-400" />
-                    {slot.expectedStudents} Enrolled
-                  </span>
-                  <span className="flex items-center gap-1 font-mono text-slate-400">
-                    <Video className="w-3.5 h-3.5 text-emerald-400" />
-                    {slot.camera}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold ${
-                slot.status === 'In-Progress' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse' :
-                slot.status === 'Completed' ? 'bg-slate-800 text-slate-300' :
-                'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-              }`}>
-                {slot.status}
-              </span>
-            </div>
+        {activeSlots.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+            No classes scheduled for {selectedDay}.
           </div>
-        ))}
+        ) : (
+          activeSlots.map((slot, idx) => (
+            <div key={idx} className="glass-panel rounded-2xl p-4 border border-slate-800 flex flex-wrap items-center justify-between gap-4 hover:border-slate-700 transition-all">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-center min-w-[130px]">
+                  <Clock className="w-4 h-4 text-sky-400 mx-auto mb-1" />
+                  <div className="font-mono text-xs text-white font-bold">{slot.timeSlot}</div>
+                  <div className="text-[10px] text-slate-400 font-mono">Period {slot.periodNumber}</div>
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-white text-sm">{slot.subjectName}</span>
+                    <span className="font-mono text-xs font-bold text-sky-400">({slot.subjectCode})</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                      slot.type === 'Lab' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
+                      slot.type === 'Project' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+                      'bg-slate-800 text-slate-300'
+                    }`}>
+                      {slot.type}
+                    </span>
+                    {slot.batch && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+                        {slot.batch}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-4">
+                    <span className="flex items-center gap-1 text-slate-300">
+                      <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                      {slot.room}
+                    </span>
+                    <span>Faculty: <strong className="text-slate-200">{slot.facultyName}</strong> ({slot.facultyCode})</span>
+                    <span className="flex items-center gap-1 font-mono text-slate-300">
+                      <Users className="w-3.5 h-3.5 text-indigo-400" />
+                      {newExpectedStudents} Enrolled
+                    </span>
+                    <span className="flex items-center gap-1 font-mono text-slate-400">
+                      <Video className="w-3.5 h-3.5 text-emerald-400" />
+                      CAM-{slot.room.replace(/[^0-9]/g, '').padStart(3, '0') || '006'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <span className={`px-3 py-1 rounded-full text-xs font-mono font-bold ${
+                  idx === 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse' :
+                  'bg-slate-800 text-slate-300'
+                }`}>
+                  {idx === 0 ? 'In-Progress' : 'Scheduled'}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -88,13 +88,14 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
     }
   };
 
-  // Timetable schedule matrix
+  // Official Timetable schedule matrix (MBM University Session 2026-27)
   const [timetable] = useState([
-    { period: 'Period 1 (09:00 - 10:00)', subject: 'CS301 - Data Structures', teacher: 'Prof. Anjali Sen', room: 'Lecture Hall 101', status: 'In Progress', attendance: '94% (58/62)' },
-    { period: 'Period 2 (10:00 - 11:00)', subject: 'CS302 - Database Systems', teacher: 'Dr. Rajesh Iyer', room: 'Lecture Hall 102', status: 'Upcoming', attendance: 'Scheduled' },
-    { period: 'Period 3 (11:15 - 12:15)', subject: 'CS303 - Operating Systems', teacher: 'Prof. Vikram Rao', room: 'Lab 201', status: 'Scheduled', attendance: 'Scheduled' },
-    { period: 'Period 4 (01:00 - 02:00)', subject: 'CS304 - Computer Networks', teacher: 'Dr. Sunita Paul', room: 'Lecture Hall 101', status: 'Scheduled', attendance: 'Scheduled' },
-    { period: 'Period 5 (02:00 - 03:00)', subject: 'CS305 - AI & Computer Vision', teacher: 'Prof. Anjali Sen', room: 'AI Research Lab', status: 'Scheduled', attendance: 'Scheduled' }
+    { period: 'Period 1 (10:00 - 10:55)', subject: '7ECC41A - Computer Communication & Data Networks (CCDN)', teacher: 'Lata Vaishnav (LTV)', room: 'Room EC-6', status: 'In Progress', attendance: '94% (48/51)' },
+    { period: 'Period 2 (10:55 - 11:50)', subject: '7ECC52A - Robotics Engineering', teacher: 'Kapoor Chand (KPC)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
+    { period: 'Period 3 (11:50 - 12:45)', subject: '7ECC44B / 41B / 42B - Lab Batches (A1, A2, A3)', teacher: 'DS / LTV / KSM', room: 'EC-11 / L-5 / EC-10', status: 'Upcoming', attendance: 'Scheduled' },
+    { period: 'Period 4 (02:00 - 02:55)', subject: '7ECC44A - Parallel Processing Techniques (PPT)', teacher: 'Dhirendra Sharma (DS)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
+    { period: 'Period 5 (02:55 - 03:50)', subject: '7ECC42A - VLSI Design Technology', teacher: 'Khushbu Mehta (KSM)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
+    { period: 'Period 6 (03:50 - 04:45)', subject: '7ECC43A - Real Time Embedded Systems (RTES)', teacher: 'Kapoor Chand (KPC)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' }
   ]);
 
   const departmentStats = [

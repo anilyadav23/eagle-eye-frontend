@@ -9,6 +9,7 @@ import {
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
 import { MASTER_BRANCH_SUBJECT_CATALOG, getBranchSubjects } from '../../data/syllabusCatalog';
+import { getTimetableSlots, OFFICIAL_TIMETABLES, TimetablePeriod } from '../../data/timetableCatalog';
 
 interface AttendanceLogEntry {
   date: string;
@@ -32,6 +33,13 @@ export const StudentDedicatedDashboard: React.FC = () => {
   const [editHostel, setEditHostel] = useState(user?.hostel || '');
   const [editBloodGroup, setEditBloodGroup] = useState(user?.bloodGroup || '');
   const [editEmergency, setEditEmergency] = useState(user?.emergencyContact || '');
+
+  // Timetable Day Selector
+  const [selectedTimetableDay, setSelectedTimetableDay] = useState<string>(() => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    return today === 'Sunday' ? 'Monday' : today;
+  });
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1337,41 +1345,88 @@ export const StudentDedicatedDashboard: React.FC = () => {
       {/* Timetable Schedule View */}
       {activeTab === 'timetable' && (
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-3">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-sky-400" />
-                Today's Lecture Schedule & Room Allocations
+                Lecture Schedule & Classroom Allocations
               </h3>
-              <p className="text-xs text-slate-400">Class timing, room assignment, and facial camera locations</p>
+              <p className="text-xs text-slate-400">
+                Official Department Timetable • MBM University Session 2026-27
+              </p>
             </div>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 font-semibold">
-              Section A • Semester 3
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 font-semibold">
+                {studentProfile.branch} • {studentProfile.semester} ({studentProfile.section})
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {[
-              { time: '09:00 - 10:00 AM', subject: 'CS301 - Computer Vision & AI', prof: 'Prof. Anjali Sen', room: 'Lecture Hall 101', status: 'Active Now' },
-              { time: '10:00 - 11:00 AM', subject: 'CS302 - Database Systems', prof: 'Dr. Rajesh Iyer', room: 'Lecture Hall 102', status: 'Upcoming' },
-              { time: '11:15 - 12:15 PM', subject: 'CS303 - Operating Systems', prof: 'Prof. Vikram Rao', room: 'Lab 201', status: 'Upcoming' },
-              { time: '01:00 - 02:00 PM', subject: 'CS304 - Computer Networks', prof: 'Dr. Sunita Paul', room: 'Lecture Hall 101', status: 'Upcoming' },
-            ].map((slot, idx) => (
-              <div key={idx} className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-white">{slot.subject}</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">{slot.room}</span>
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">Faculty: {slot.prof} • Timing: {slot.time}</div>
-                </div>
-                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg ${
-                  slot.status === 'Active Now' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {slot.status}
-                </span>
-              </div>
+          {/* Days of the Week Navigation */}
+          <div className="flex flex-wrap gap-1.5 p-1.5 bg-slate-950/80 rounded-xl border border-slate-800/80">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+              <button
+                key={day}
+                onClick={() => setSelectedTimetableDay(day)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+                  selectedTimetableDay === day
+                    ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                }`}
+              >
+                {day}
+              </button>
             ))}
+          </div>
+
+          {/* Timetable Period Cards */}
+          <div className="space-y-3">
+            {getTimetableSlots(studentProfile.branch, studentProfile.semester, selectedTimetableDay).length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+                No classes scheduled for {selectedTimetableDay}.
+              </div>
+            ) : (
+              getTimetableSlots(studentProfile.branch, studentProfile.semester, selectedTimetableDay).map((slot, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-wrap items-center justify-between gap-3 hover:border-slate-700 transition-all">
+                  <div className="flex items-start space-x-3.5">
+                    <div className="px-2.5 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 font-mono text-xs font-bold flex flex-col items-center justify-center min-w-[70px]">
+                      <span>Period {slot.periodNumber}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">{slot.type}</span>
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-bold text-white">{slot.subjectName}</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">
+                          {slot.subjectCode}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          {slot.room}
+                        </span>
+                        {slot.batch && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                            {slot.batch}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-3">
+                        <span>Faculty: <strong className="text-slate-300">{slot.facultyName}</strong> ({slot.facultyCode})</span>
+                        <span>•</span>
+                        <span>Time: <strong className="text-sky-300 font-mono">{slot.timeSlot}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                      idx === 0 
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
+                        : 'bg-slate-900 text-slate-400 border-slate-800'
+                    }`}>
+                      {idx === 0 ? 'Active Today' : 'Scheduled'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
