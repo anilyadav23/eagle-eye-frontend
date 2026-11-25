@@ -9,6 +9,7 @@ import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
 import { getTimetableSlots, getSlotLiveStatus, TimetablePeriod } from '../../data/timetableCatalog';
 import { TimetableManagerView } from './TimetableManagerView';
+import { CameraMatrixView } from '../cameras/CameraMatrixView';
 
 interface PendingRequest {
   id: string;
@@ -445,48 +446,7 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
 
       {/* Classroom Surveillance Matrix */}
       {activeSubTab === 'camerawall' && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Camera className="w-4 h-4 text-sky-400" />
-                Department Classrooms Optical Stream Matrix
-              </h2>
-              <p className="text-xs text-slate-400">Live AI bounding boxes and attendance face recognition across lecture rooms</p>
-            </div>
-            <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold">
-              {cameras.length} Department Cameras Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cameras.map(cam => (
-              <div key={cam.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-white">{cam.name}</span>
-                  <span className="font-mono text-[10px] text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {cam.status}
-                  </span>
-                </div>
-                <div className="aspect-video bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden border border-slate-800">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
-                  <div className="text-center space-y-1">
-                    <Camera className="w-8 h-8 text-sky-400/50 mx-auto" />
-                    <span className="text-xs font-mono text-slate-400 block">{cam.room || 'Department Zone'}</span>
-                  </div>
-                  <div className="absolute bottom-2 left-2 text-[10px] font-mono text-emerald-400 font-semibold">
-                    Resolution: {cam.resolution}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                  <span>Stream: {cam.stream_type}</span>
-                  <span>FPS: {cam.fps}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CameraMatrixView />
       )}
 
       {/* Department Timetable Hub Tab */}

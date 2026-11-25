@@ -16,7 +16,7 @@ export const ConnectCameraModal: React.FC = () => {
   const [name, setName] = useState<string>('Laptop Integrated Webcam');
   const [building, setBuilding] = useState<string>(activeBuilding || 'Corporate Tower A');
   const [floor, setFloor] = useState<string>(activeFloor || 'Floor 2');
-  const [room, setRoom] = useState<string>('Server Room');
+  const [room, setRoom] = useState<string>('Room EC-6');
   const [ipAddress, setIpAddress] = useState<string>('192.168.1.50');
   const [port, setPort] = useState<number>(8080);
   const [username, setUsername] = useState<string>('admin');
@@ -414,19 +414,22 @@ export const ConnectCameraModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Room / Zone Assignment</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Room / Classroom Assignment (Syncs with Timetable)
+              </label>
               <select
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-medium"
               >
-                <option value="Server Room">Floor 2 - Server Room (Restricted)</option>
-                <option value="Meeting Room">Floor 2 - Meeting Room</option>
-                <option value="Office 201">Floor 2 - Office 201</option>
-                <option value="Office 202">Floor 2 - Office 202</option>
-                <option value="Main Entrance">Floor 1 - Main Entrance Gate</option>
-                <option value="Reception">Floor 1 - Reception Desk</option>
-                <option value="Corridor">Floor 2 - North Corridor</option>
+                <option value="Room EC-6">Room EC-6 (Main Lecture Hall - CCDN / Robotics / VLSI / RTES / PPT)</option>
+                <option value="Room EC-1">Room EC-1 (Lecture Hall - CCDN Theory)</option>
+                <option value="Lab EC-10">Lab EC-10 (VLSI Simulation Lab)</option>
+                <option value="Lab EC-11">Lab EC-11 (Embedded Systems & Advance Computer Lab)</option>
+                <option value="Lab L-5">Lab L-5 (Computer Network Lab)</option>
+                <option value="Room EC-5(B)">Room EC-5(B) (Minor Project Lab)</option>
+                <option value="ECE Corridor">ECE Corridor (North Wing)</option>
+                <option value="Faculty & Dean Lounge">Faculty & Dean Lounge</option>
               </select>
             </div>
           </div>

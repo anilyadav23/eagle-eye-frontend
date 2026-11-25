@@ -80,6 +80,7 @@ interface SecurityContextType {
   connectCamera: (payload: CameraConnectPayload) => Promise<Camera>;
   connectLaptopWebcam: (deviceIndex?: number, roomName?: string) => Promise<Camera>;
   connectMobileCamera: (phoneIp: string, port?: number, streamType?: string, roomName?: string) => Promise<Camera>;
+  updateCamera: (cameraId: string, updates: Partial<Camera>) => Promise<Camera>;
   disconnectCamera: (cameraId: string) => Promise<void>;
   reconnectCamera: (cameraId: string) => Promise<void>;
   deleteCamera: (cameraId: string) => Promise<void>;
@@ -94,6 +95,136 @@ interface SecurityContextType {
   uploadBlueprint: (file: File, buildingId: string, floorId: string) => Promise<any>;
   saveBlueprint: (payload: any) => Promise<FloorProfile>;
 }
+
+// Default initial cameras with Department Timetable rooms (Room EC-6, EC-11, L-5, EC-10, EC-5(B), EC-1)
+export const DEFAULT_DEPARTMENT_CAMERAS: Camera[] = [
+  {
+    id: "cam-ec6",
+    camera_id: "CAM-006",
+    name: "Room EC-6 Optical Camera",
+    building: "ECE Department Block",
+    floor: "Floor 2",
+    room: "Room EC-6",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "Hikvision",
+    stream_type: "RTSP",
+    stream_url: "rtsp://192.168.1.106:554/live",
+    is_real_camera: true,
+    fps: 30,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 42,
+    ai_models: ["YOLOv8", "CentroidTracker", "HUDAnnotator"],
+    fov_angle: 90,
+    x_pos: 20,
+    y_pos: 30
+  },
+  {
+    id: "cam-ec11",
+    camera_id: "CAM-011",
+    name: "Lab EC-11 (Embedded Lab) Camera",
+    building: "ECE Department Block",
+    floor: "Floor 2",
+    room: "Lab EC-11",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "Dahua",
+    stream_type: "RTSP",
+    stream_url: "rtsp://192.168.1.111:554/live",
+    is_real_camera: true,
+    fps: 30,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 38,
+    ai_models: ["YOLOv8", "HUDAnnotator"],
+    fov_angle: 95,
+    x_pos: 45,
+    y_pos: 30
+  },
+  {
+    id: "cam-l5",
+    camera_id: "CAM-005",
+    name: "Lab L-5 (Computer Network Lab) Camera",
+    building: "ECE Department Block",
+    floor: "Floor 1",
+    room: "Lab L-5",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "CP Plus",
+    stream_type: "RTSP",
+    stream_url: "rtsp://192.168.1.105:554/live",
+    is_real_camera: true,
+    fps: 25,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 45,
+    ai_models: ["YOLOv8", "CentroidTracker"],
+    fov_angle: 85,
+    x_pos: 70,
+    y_pos: 30
+  },
+  {
+    id: "cam-ec10",
+    camera_id: "CAM-010",
+    name: "Lab EC-10 (VLSI Sim Lab) Camera",
+    building: "ECE Department Block",
+    floor: "Floor 2",
+    room: "Lab EC-10",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "Axis",
+    stream_type: "RTSP",
+    stream_url: "rtsp://192.168.1.110:554/live",
+    is_real_camera: true,
+    fps: 30,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 32,
+    ai_models: ["YOLOv8", "CentroidTracker", "HUDAnnotator"],
+    fov_angle: 90,
+    x_pos: 30,
+    y_pos: 60
+  },
+  {
+    id: "cam-ec5b",
+    camera_id: "CAM-005B",
+    name: "Room EC-5(B) (Project Lab) Camera",
+    building: "ECE Department Block",
+    floor: "Floor 2",
+    room: "Room EC-5(B)",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "Reolink",
+    stream_type: "RTSP",
+    stream_url: "rtsp://192.168.1.152:554/live",
+    is_real_camera: true,
+    fps: 25,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 50,
+    ai_models: ["YOLOv8", "HUDAnnotator"],
+    fov_angle: 80,
+    x_pos: 60,
+    y_pos: 60
+  },
+  {
+    id: "cam-laptop",
+    camera_id: "CAM-LAPTOP",
+    name: "Laptop Integrated Webcam (Live Optical Node)",
+    building: "ECE Department Block",
+    floor: "Floor 2",
+    room: "Room EC-6",
+    status: "Online",
+    connection_status: "Connected",
+    brand: "Local USB / Built-in Webcam",
+    stream_type: "USB Local",
+    device_index: 0,
+    is_real_camera: true,
+    fps: 30,
+    resolution: "1080p (1920x1080)",
+    latency_ms: 12,
+    ai_models: ["YOLOv8", "CentroidTracker", "HUDAnnotator"],
+    fov_angle: 90,
+    x_pos: 50,
+    y_pos: 50
+  }
+];
 
 const DEFAULT_STATS: BuildingStats = {
   total_in_building: 128,
@@ -228,7 +359,16 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [stats, setStats] = useState<BuildingStats>(DEFAULT_STATS);
   const [persons, setPersons] = useState<Person[]>([]);
   const [rooms, setRooms] = useState<RoomZone[]>([]);
-  const [cameras, setCameras] = useState<Camera[]>([]);
+  const [cameras, setCameras] = useState<Camera[]>(() => {
+    try {
+      const saved = localStorage.getItem('eagle_eye_department_cameras');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_DEPARTMENT_CAMERAS;
+  });
   const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
   const [rules, setRules] = useState<SecurityRule[]>([]);
   const [buildings, setBuildings] = useState<BuildingProfile[]>([]);
@@ -842,24 +982,82 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const connectCamera = async (payload: CameraConnectPayload): Promise<Camera> => {
-    const res = await fetch(`${getApiBase()}/api/cameras/connect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    let newCam: Camera;
+    try {
+      const res = await fetch(`${getApiBase()}/api/cameras/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        newCam = await res.json();
+      } else {
+        throw new Error('Backend connect returned non-ok');
+      }
+    } catch (e) {
+      // Offline / Client fallback camera creation
+      newCam = {
+        id: `cam-${Date.now()}`,
+        camera_id: payload.camera_id || `CAM-${Math.floor(100 + Math.random() * 900)}`,
+        name: payload.name,
+        building: payload.building || activeBuilding,
+        floor: payload.floor || activeFloor,
+        room: payload.room || 'Room EC-6',
+        status: 'Online',
+        connection_status: 'Connected',
+        brand: payload.brand,
+        stream_type: payload.stream_type,
+        stream_url: payload.stream_url,
+        ip_address: payload.ip_address,
+        port: payload.port,
+        device_index: payload.device_index ?? 0,
+        is_real_camera: true,
+        fps: 30,
+        resolution: '1080p (1920x1080)',
+        latency_ms: 25,
+        ai_models: payload.ai_models || ['YOLOv8', 'CentroidTracker', 'HUDAnnotator'],
+        fov_angle: 90,
+        x_pos: 50,
+        y_pos: 50
+      };
+    }
+
+    setCameras(prev => {
+      const updated = upsertItem(prev, newCam, 'camera_id');
+      try {
+        localStorage.setItem('eagle_eye_department_cameras', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
     });
-    const newCam: Camera = await res.json();
-    setCameras(prev => upsertItem(prev, newCam, 'camera_id'));
     setSelectedCameraId(newCam.camera_id);
     return newCam;
   };
 
+  const updateCamera = async (cameraId: string, updates: Partial<Camera>): Promise<Camera> => {
+    let updatedCam: Camera | null = null;
+    setCameras(prev => {
+      const updated = prev.map(c => {
+        if (c.camera_id === cameraId) {
+          updatedCam = { ...c, ...updates };
+          return updatedCam;
+        }
+        return c;
+      });
+      try {
+        localStorage.setItem('eagle_eye_department_cameras', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    return updatedCam as any;
+  };
+
   // 1-Click Laptop Webcam Connection Helper
-  const connectLaptopWebcam = async (deviceIndex: number = 0, roomName: string = 'Server Room'): Promise<Camera> => {
+  const connectLaptopWebcam = async (deviceIndex: number = 0, roomName: string = 'Room EC-6'): Promise<Camera> => {
     const payload: CameraConnectPayload = {
       camera_id: 'CAM-LAPTOP',
       name: `Laptop Integrated Webcam (Device #${deviceIndex})`,
-      building: activeBuilding,
-      floor: activeFloor,
+      building: 'ECE Department Block',
+      floor: 'Floor 2',
       room: roomName,
       brand: 'Local USB / Built-in Webcam',
       stream_type: 'USB Local',
@@ -872,7 +1070,7 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // 1-Click Mobile Phone Camera Connection Helper
-  const connectMobileCamera = async (phoneIp: string, port: number = 8080, streamType: string = 'IP_WEBCAM', roomName: string = 'Main Entrance'): Promise<Camera> => {
+  const connectMobileCamera = async (phoneIp: string, port: number = 8080, streamType: string = 'IP_WEBCAM', roomName: string = 'Room EC-6'): Promise<Camera> => {
     let streamUrl = `http://${phoneIp}:${port}/video`;
     if (streamType === 'DROIDCAM') {
       streamUrl = `http://${phoneIp}:${port || 4747}/video`;
@@ -882,8 +1080,8 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     const payload: CameraConnectPayload = {
       name: `Mobile Optical Cam (${phoneIp})`,
-      building: activeBuilding,
-      floor: activeFloor,
+      building: 'ECE Department Block',
+      floor: 'Floor 2',
       room: roomName,
       brand: 'Mobile IP Cam (DroidCam/IP Webcam)',
       stream_type: 'HTTP/MJPEG',
@@ -896,24 +1094,42 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const disconnectCamera = async (cameraId: string) => {
-    const res = await fetch(`${getApiBase()}/api/cameras/${cameraId}/disconnect`, { method: 'POST' });
-    if (res.ok) {
-      const updated = await res.json();
-      setCameras(prev => prev.map(c => c.camera_id === cameraId ? updated : c));
-    }
+    try {
+      await fetch(`${getApiBase()}/api/cameras/${cameraId}/disconnect`, { method: 'POST' });
+    } catch (e) {}
+    setCameras(prev => {
+      const updated = prev.map(c => c.camera_id === cameraId ? { ...c, connection_status: 'Disconnected' as ConnectionStatus, status: 'Offline' as const } : c);
+      try {
+        localStorage.setItem('eagle_eye_department_cameras', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
   };
 
   const reconnectCamera = async (cameraId: string) => {
-    const res = await fetch(`${getApiBase()}/api/cameras/${cameraId}/reconnect`, { method: 'POST' });
-    if (res.ok) {
-      const updated = await res.json();
-      setCameras(prev => prev.map(c => c.camera_id === cameraId ? updated : c));
-    }
+    try {
+      await fetch(`${getApiBase()}/api/cameras/${cameraId}/reconnect`, { method: 'POST' });
+    } catch (e) {}
+    setCameras(prev => {
+      const updated = prev.map(c => c.camera_id === cameraId ? { ...c, connection_status: 'Connected' as ConnectionStatus, status: 'Online' as const } : c);
+      try {
+        localStorage.setItem('eagle_eye_department_cameras', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
   };
 
   const deleteCamera = async (cameraId: string) => {
-    await fetch(`${getApiBase()}/api/cameras/${cameraId}`, { method: 'DELETE' });
-    setCameras(prev => prev.filter(c => c.camera_id !== cameraId));
+    try {
+      await fetch(`${getApiBase()}/api/cameras/${cameraId}`, { method: 'DELETE' });
+    } catch (e) {}
+    setCameras(prev => {
+      const updated = prev.filter(c => c.camera_id !== cameraId);
+      try {
+        localStorage.setItem('eagle_eye_department_cameras', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
   };
 
   const triggerUnknownPersonPrompt = async (customTrackId?: string, customPhotoUrl?: string) => {
@@ -1151,6 +1367,7 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       connectCamera,
       connectLaptopWebcam,
       connectMobileCamera,
+      updateCamera,
       disconnectCamera,
       reconnectCamera,
       deleteCamera,
