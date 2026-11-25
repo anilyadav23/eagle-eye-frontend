@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Camera as CameraIcon, Video, Link2, Unlink, Plus, Trash2, 
+import {
+  Camera as CameraIcon, Video, Link2, Unlink, Plus, Trash2,
   CheckCircle2, AlertCircle, RefreshCw, Layers, ShieldCheck, Power,
   MapPin, Edit3, Save, X, BookOpen, Clock, Radio
 } from 'lucide-react';
@@ -35,7 +35,7 @@ function getActiveSlotForRoom(roomName: string): { slot: TimetablePeriod | null;
   for (const slot of daySlots) {
     const cleanSlotRoom = slot.room.toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanTargetRoom = roomName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     // Check match or partial match (e.g., "EC-11 / L-5 / EC-10" matches "Lab EC-11")
     if (cleanSlotRoom.includes(cleanTargetRoom) || cleanTargetRoom.includes(cleanSlotRoom)) {
       if (slot.startTime && slot.endTime) {
@@ -80,7 +80,7 @@ const CameraCard: React.FC<{
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editName, setEditName] = useState<string>(cam.name);
   const [editRoom, setEditRoom] = useState<string>(cam.room);
-  
+
   // Real-time Facial Recognition AI Detection State
   const [detectedStudent, setDetectedStudent] = useState<{
     name: string;
@@ -113,22 +113,22 @@ const CameraCard: React.FC<{
         },
         audio: false
       })
-      .then(stream => {
-        if (!active) {
-          stream.getTracks().forEach(t => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-        setWebcamError(null);
-      })
-      .catch(err => {
-        console.warn('Local webcam access failed:', err);
-        setWebcamError('Webcam permission denied or device busy');
-      });
+        .then(stream => {
+          if (!active) {
+            stream.getTracks().forEach(t => t.stop());
+            return;
+          }
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(() => { });
+          }
+          setWebcamError(null);
+        })
+        .catch(err => {
+          console.warn('Local webcam access failed:', err);
+          setWebcamError('Webcam permission denied or device busy');
+        });
     } else {
       // Disconnected or non-webcam: stop tracks
       if (streamRef.current) {
@@ -156,7 +156,7 @@ const CameraCard: React.FC<{
       timer = setInterval(() => {
         const now = new Date();
         const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-        
+
         if (simulatedDetectionMode === 'REGISTERED') {
           // Resolve enrolled student from approvalRequests
           const keshav = approvalRequests.find(r => r.rollNo.toUpperCase() === '24UECC8024');
@@ -186,7 +186,7 @@ const CameraCard: React.FC<{
             `Optical AI face vector verified at ${cam.name} (${cam.room})`,
             activeSubject,
             cam.room
-          ).catch(() => {});
+          ).catch(() => { });
         } else {
           // If unregistered student/person came in front of camera
           setDetectedStudent({
@@ -224,11 +224,10 @@ const CameraCard: React.FC<{
 
   return (
     <div
-      className={`glass-panel rounded-2xl p-4 border transition-all space-y-3 ${
-        isConnected
-          ? 'border-slate-800 hover:border-sky-500/60 shadow-lg shadow-sky-950/20'
-          : 'border-red-900/40 bg-red-950/20 opacity-80'
-      }`}
+      className={`glass-panel rounded-2xl p-4 border transition-all space-y-3 ${isConnected
+        ? 'border-slate-800 hover:border-sky-500/60 shadow-lg shadow-sky-950/20'
+        : 'border-red-900/40 bg-red-950/20 opacity-80'
+        }`}
     >
       {/* Card Header: Status, Name, Edit Trigger, Connection Power Toggle */}
       <div className="flex items-start justify-between gap-2">
@@ -269,9 +268,8 @@ const CameraCard: React.FC<{
           ) : (
             <>
               <div className="flex items-center space-x-2">
-                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                  isConnected ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : isConnecting ? 'bg-amber-400 animate-pulse' : 'bg-red-500'
-                }`} />
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' : isConnecting ? 'bg-amber-400 animate-pulse' : 'bg-red-500'
+                  }`} />
                 <h3 className="font-bold text-xs text-white truncate" title={cam.name}>
                   {cam.name}
                 </h3>
@@ -299,11 +297,10 @@ const CameraCard: React.FC<{
                 <button
                   onClick={() => setSimulatedDetectionMode(m => m === 'REGISTERED' ? 'NOT_VERIFIED' : 'REGISTERED')}
                   title="Toggle between Enrolled Student vs Unregistered Person in camera view"
-                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold border transition-all ${
-                    simulatedDetectionMode === 'REGISTERED'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                      : 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
-                  }`}
+                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold border transition-all ${simulatedDetectionMode === 'REGISTERED'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                    : 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
+                    }`}
                 >
                   {simulatedDetectionMode === 'REGISTERED' ? 'AI: Enrolled Face Mode' : 'AI: Unregistered Face Mode'}
                 </button>
@@ -317,13 +314,12 @@ const CameraCard: React.FC<{
           <button
             onClick={() => onToggle(cam)}
             title={isConnected ? 'Disconnect Camera Stream' : 'Connect Camera Stream'}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center space-x-1 border transition-all ${
-              isConnected
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/50 hover:bg-red-950 hover:text-red-300 hover:border-red-600'
-                : isConnecting
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center space-x-1 border transition-all ${isConnected
+              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/50 hover:bg-red-950 hover:text-red-300 hover:border-red-600'
+              : isConnecting
                 ? 'bg-amber-950 text-amber-300 border-amber-600'
                 : 'bg-red-950/60 text-red-300 border-red-600/50 hover:bg-emerald-950 hover:text-emerald-300 hover:border-emerald-600'
-            }`}
+              }`}
           >
             <Power className="w-3 h-3" />
             <span>{isConnected ? 'ONLINE' : isConnecting ? 'CONNECTING...' : 'DISCONNECTED'}</span>
@@ -394,12 +390,11 @@ const CameraCard: React.FC<{
 
         {/* Real-time AI Facial Recognition Bounding Box & HUD Verification Tag */}
         {isConnected && detectedStudent && (
-          <div 
-            className={`absolute border-2 rounded-lg pointer-events-none transition-all duration-300 ${
-              detectedStudent.isVerified
-                ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)] animate-pulse'
-                : 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-bounce'
-            }`}
+          <div
+            className={`absolute border-2 rounded-lg pointer-events-none transition-all duration-300 ${detectedStudent.isVerified
+              ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)] animate-pulse'
+              : 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-bounce'
+              }`}
             style={{
               left: `${detectedStudent.box.x}%`,
               top: `${detectedStudent.box.y}%`,
@@ -408,22 +403,20 @@ const CameraCard: React.FC<{
             }}
           >
             {/* Top Bounding Box Header */}
-            <div className={`absolute -top-7 left-0 border px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 whitespace-nowrap shadow-lg ${
-              detectedStudent.isVerified 
-                ? 'bg-emerald-950/95 border-emerald-500 text-emerald-300' 
-                : 'bg-red-950/95 border-red-500 text-red-300'
-            }`}>
+            <div className={`absolute -top-7 left-0 border px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 whitespace-nowrap shadow-lg ${detectedStudent.isVerified
+              ? 'bg-emerald-950/95 border-emerald-500 text-emerald-300'
+              : 'bg-red-950/95 border-red-500 text-red-300'
+              }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${detectedStudent.isVerified ? 'bg-emerald-400 animate-ping' : 'bg-red-500'}`}></span>
               <span>{detectedStudent.name}</span>
               <span className="text-[9px] font-normal">({(detectedStudent.confidence * 100).toFixed(0)}%)</span>
             </div>
 
             {/* Bottom Bounding Box Status Badge */}
-            <div className={`absolute -bottom-6 left-0 border px-1.5 py-0.5 rounded text-[9px] font-mono whitespace-nowrap flex items-center gap-1 ${
-              detectedStudent.isVerified
-                ? 'bg-black/85 border-emerald-500/60 text-emerald-300'
-                : 'bg-red-950/90 border-red-500/60 text-red-300 font-bold'
-            }`}>
+            <div className={`absolute -bottom-6 left-0 border px-1.5 py-0.5 rounded text-[9px] font-mono whitespace-nowrap flex items-center gap-1 ${detectedStudent.isVerified
+              ? 'bg-black/85 border-emerald-500/60 text-emerald-300'
+              : 'bg-red-950/90 border-red-500/60 text-red-300 font-bold'
+              }`}>
               {detectedStudent.isVerified ? (
                 <>
                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -454,11 +447,10 @@ const CameraCard: React.FC<{
             Classroom Sync:
           </span>
           {activeClass.slot ? (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-              activeClass.status === 'In Progress'
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
-                : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-            }`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${activeClass.status === 'In Progress'
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
+              : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+              }`}>
               {activeClass.status === 'In Progress' ? 'Active Class Live' : activeClass.status}
             </span>
           ) : (
@@ -500,8 +492,8 @@ const CameraCard: React.FC<{
 };
 
 export const CameraMatrixView: React.FC = () => {
-  const { 
-    cameras, stats, setIsConnectCamModalOpen, 
+  const {
+    cameras, stats, setIsConnectCamModalOpen,
     disconnectCamera, reconnectCamera, deleteCamera, updateCamera,
     connectLaptopWebcam
   } = useSecurity();
@@ -562,33 +554,29 @@ export const CameraMatrixView: React.FC = () => {
           <div className="flex items-center bg-slate-900 rounded-xl p-1 border border-slate-800 text-xs">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                filter === 'all' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${filter === 'all' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'
+                }`}
             >
               All ({cameras.length})
             </button>
             <button
               onClick={() => setFilter('real')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                filter === 'real' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${filter === 'real' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
             >
               Real Cameras ({cameras.filter(c => c.is_real_camera).length})
             </button>
             <button
               onClick={() => setFilter('connected')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                filter === 'connected' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${filter === 'connected' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
             >
               Connected
             </button>
             <button
               onClick={() => setFilter('disconnected')}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                filter === 'disconnected' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${filter === 'disconnected' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
             >
               Disconnected
             </button>

@@ -576,11 +576,61 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
                 return updated;
               });
             } else if (inner.action === 'UPDATE_STATUS') {
-              const { id, status } = inner.data;
+              const { id, status, academicDetails } = inner.data;
               setApprovalRequests(prev => {
-                const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+                const targetReq = prev.find(r => r.id === id);
+                const updated = prev.map(r => {
+                  if (r.id === id) {
+                    return {
+                      ...r,
+                      status,
+                      ...(academicDetails?.semester ? { semester: academicDetails.semester } : {}),
+                      ...(academicDetails?.year ? { year: academicDetails.year } : {}),
+                      ...(academicDetails?.section ? { section: academicDetails.section } : {}),
+                      ...(academicDetails?.department ? { department: academicDetails.department } : {}),
+                      ...(academicDetails?.branch ? { branch: academicDetails.branch } : {})
+                    };
+                  }
+                  return r;
+                });
                 try {
                   localStorage.setItem('eagle_eye_approval_requests', JSON.stringify(updated));
+
+                  // When approved, automatically activate or add to registered_users for immediate login
+                  if (targetReq && status === 'Approved') {
+                    const regUsers: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
+                    const uIdx = regUsers.findIndex(
+                      u => (u.username && u.username.toLowerCase() === targetReq.rollNo.toLowerCase()) ||
+                           (u.email && u.email.toLowerCase() === targetReq.email.toLowerCase())
+                    );
+                    if (uIdx >= 0) {
+                      regUsers[uIdx].is_active = 1;
+                      regUsers[uIdx].approval_status = 'Approved';
+                      if (academicDetails?.semester) regUsers[uIdx].semester = academicDetails.semester;
+                      if (academicDetails?.year) regUsers[uIdx].year = academicDetails.year;
+                      if (academicDetails?.section) regUsers[uIdx].section = academicDetails.section;
+                      if (academicDetails?.department) regUsers[uIdx].department = academicDetails.department;
+                      if (academicDetails?.branch) regUsers[uIdx].branch = academicDetails.branch;
+                    } else {
+                      regUsers.unshift({
+                        id: `usr-${targetReq.rollNo}`,
+                        username: targetReq.rollNo,
+                        email: targetReq.email || `${targetReq.rollNo.toLowerCase()}@campus.edu`,
+                        password: '123456',
+                        role: 'Student',
+                        full_name: targetReq.studentName,
+                        department: academicDetails?.department || targetReq.department || 'Electronics & Communication Engineering',
+                        branch: academicDetails?.branch || targetReq.branch || 'Electronics & Computer Control (ECC)',
+                        year: academicDetails?.year || targetReq.year || '4th Year',
+                        semester: academicDetails?.semester || targetReq.semester || '7th Semester',
+                        section: academicDetails?.section || targetReq.section || 'Section A',
+                        phone: targetReq.mobile || '+91 98290 12345',
+                        is_active: 1,
+                        approval_status: 'Approved'
+                      });
+                    }
+                    localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regUsers));
+                  }
                 } catch (e) {}
                 return updated;
               });
@@ -717,7 +767,7 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
 
         // When approved or rejected, also sync with registered_users in localStorage
         const regList: any[] = JSON.parse(localStorage.getItem('eagle_eye_registered_users') || '[]');
-        if (targetReq && regList.length > 0) {
+        if (targetReq) {
           const uIdx = regList.findIndex(
             u => (u.username && u.username.toLowerCase() === targetReq.rollNo.toLowerCase()) ||
                  (u.email && u.email.toLowerCase() === targetReq.email.toLowerCase())
@@ -732,8 +782,26 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
               if (academicDetails.department) regList[uIdx].department = academicDetails.department;
               if (academicDetails.branch) regList[uIdx].branch = academicDetails.branch;
             }
-            localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
+          } else if (status === 'Approved') {
+            // Student was enrolled/approved via KYC without existing user entry - create credentials immediately
+            regList.unshift({
+              id: `usr-${targetReq.rollNo}`,
+              username: targetReq.rollNo,
+              email: targetReq.email || `${targetReq.rollNo.toLowerCase()}@campus.edu`,
+              password: '123456',
+              role: 'Student',
+              full_name: targetReq.studentName,
+              department: academicDetails?.department || targetReq.department || 'Electronics & Communication Engineering',
+              branch: academicDetails?.branch || targetReq.branch || 'Electronics & Computer Control (ECC)',
+              year: academicDetails?.year || targetReq.year || '4th Year',
+              semester: academicDetails?.semester || targetReq.semester || '7th Semester',
+              section: academicDetails?.section || targetReq.section || 'Section A',
+              phone: targetReq.mobile || '+91 98290 12345',
+              is_active: 1,
+              approval_status: 'Approved'
+            });
           }
+          localStorage.setItem('eagle_eye_registered_users', JSON.stringify(regList));
         }
       } catch (e) {}
       return updated;
