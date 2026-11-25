@@ -112,6 +112,22 @@ export const TeacherDedicatedDashboard: React.FC = () => {
       if (stored) return JSON.parse(stored);
     } catch (e) {}
     return [
+      {
+        rollNo: '24UECC8024',
+        name: 'Keshav Nagar',
+        email: 'keshav.nagar@campus.edu',
+        phone: '+91 98290 12345',
+        department: 'Electronics & Communication Engineering',
+        semester: '7th Semester',
+        attendancePct: 95,
+        exams: {
+          midterm1: { marks: 48, maxMarks: 50 },
+          midterm2: { marks: 46, maxMarks: 50 },
+          viva: { marks: 29, maxMarks: 30 },
+          quiz: { marks: 19, maxMarks: 20 },
+          semesterFinal: { marks: 94, maxMarks: 100 }
+        }
+      },
       { 
         rollNo: '22CS001', 
         name: 'Aarya Sharma', 

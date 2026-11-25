@@ -188,6 +188,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     hod: {
       pass: ['Anil@2026', 'anil@2026', 'hod123', '123456'],
       user: { id: 'usr-hod', username: 'HODECC', email: 'hodecc@campus.edu', role: 'HOD', full_name: 'Prof. Kapil Parihar (HOD)', department: 'Electronics & Communication Engineering' }
+    },
+    // Keshav Nagar - Official Enrolled Student Profile
+    '24uecc8024': {
+      pass: ['123456'],
+      user: {
+        id: 'STU-24UECC8024',
+        username: '24UECC8024',
+        email: 'keshav.nagar@campus.edu',
+        role: 'Student',
+        full_name: 'Keshav Nagar',
+        department: 'Electronics & Communication Engineering',
+        branch: 'Electronics & Computer Control (ECC)',
+        year: '4th Year',
+        semester: '7th Semester',
+        section: 'Section A',
+        phone: '+91 98290 12345',
+        hostel: 'Raman Hostel, Room 412',
+        bloodGroup: 'O+ Positive',
+        emergencyContact: '+91 94140 54321 (Parent)',
+        mentor: 'Prof. Kapil Parihar (HOD)'
+      }
     }
   };
 

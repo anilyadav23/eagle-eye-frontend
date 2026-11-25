@@ -768,9 +768,17 @@ export const StudentDedicatedDashboard: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-800">
               <div className="flex items-center space-x-5">
                 <div className="relative">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-sky-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-sky-500/20 border-2 border-sky-400/40">
-                    {studentProfile.fullName.charAt(0)}
-                  </div>
+                  {user?.username?.toUpperCase() === '24UECC8024' ? (
+                    <img 
+                      src="/students/24UECC8024_face.jpg" 
+                      alt={studentProfile.fullName}
+                      className="w-20 h-20 rounded-2xl object-cover shadow-xl shadow-sky-500/20 border-2 border-sky-400/40"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-sky-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-sky-500/20 border-2 border-sky-400/40">
+                      {studentProfile.fullName.charAt(0)}
+                    </div>
+                  )}
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   </div>
@@ -971,6 +979,26 @@ export const StudentDedicatedDashboard: React.FC = () => {
                     <span className="text-emerald-400 font-semibold">Clean (0 Flags)</span>
                   </div>
                 </div>
+
+                {/* Uploaded Biometric KYC Photos Gallery */}
+                {user?.username?.toUpperCase() === '24UECC8024' && (
+                  <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
+                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider block">
+                      Enrolled Biometric Photos (Face ID Vectors):
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-lg overflow-hidden border border-slate-700 bg-slate-900 aspect-square">
+                        <img src="/students/24UECC8024_face.jpg" alt="KYC 1" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="rounded-lg overflow-hidden border border-slate-700 bg-slate-900 aspect-square">
+                        <img src="/students/24UECC8024_outdoor.jpg" alt="KYC 2" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="rounded-lg overflow-hidden border border-slate-700 bg-slate-900 aspect-square">
+                        <img src="/students/24UECC8024_full.jpg" alt="KYC 3" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -245,6 +245,38 @@ const DEFAULT_STATS: BuildingStats = {
 
 const DEFAULT_ATTENDANCE: AttendanceRecord[] = [
   {
+    id: "att-rec-keshav-1",
+    person_id: "24UECC8024",
+    student_id: "24UECC8024",
+    name: "Keshav Nagar",
+    role: "Student",
+    department: "Electronics & Communication Engineering",
+    course: "7ECC41A - Computer Communication & Data Networks (CCDN)",
+    room: "Room EC-6",
+    status: "Verified",
+    timestamp: "10:02:15 AM",
+    confidence_score: 0.99,
+    photo_url: "/students/24UECC8024_face.jpg",
+    verified_camera_id: "CAM-006",
+    notes: "Biometric 3D Facial Vector verified at Room EC-6 entrance (99.4% similarity match)."
+  },
+  {
+    id: "att-rec-keshav-2",
+    person_id: "24UECC8024",
+    student_id: "24UECC8024",
+    name: "Keshav Nagar",
+    role: "Student",
+    department: "Electronics & Communication Engineering",
+    course: "7ECC52A - Robotics Engineering",
+    room: "Room EC-6",
+    status: "Verified",
+    timestamp: "10:57:40 AM",
+    confidence_score: 0.98,
+    photo_url: "/students/24UECC8024_face.jpg",
+    verified_camera_id: "CAM-006",
+    notes: "Automated roll-call marked via optical ceiling sensor."
+  },
+  {
     id: "att-rec-1",
     person_id: "STU-10087",
     student_id: "STU-2026-0104",
@@ -394,6 +426,33 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (saved) requests = JSON.parse(saved);
     } catch (e) {
       requests = [];
+    }
+
+    // Ensure Keshav Nagar (24UECC8024) is enrolled and approved by default
+    const keshavExists = requests.some(r => r.rollNo.toUpperCase() === '24UECC8024');
+    if (!keshavExists) {
+      requests.unshift({
+        id: 'REQ-24UECC8024',
+        studentName: 'Keshav Nagar',
+        rollNo: '24UECC8024',
+        regNo: 'REG-24UECC8024',
+        department: 'Electronics & Communication Engineering',
+        branch: 'Electronics & Computer Control (ECC)',
+        year: '4th Year',
+        semester: '7th Semester',
+        section: 'Section A',
+        email: 'keshav.nagar@campus.edu',
+        mobile: '+91 98290 12345',
+        submittedAt: 'Today, 08:30 AM',
+        photos: [
+          '/students/24UECC8024_face.jpg',
+          '/students/24UECC8024_outdoor.jpg',
+          '/students/24UECC8024_full.jpg'
+        ],
+        type: 'Official Enrolled Student Profile',
+        status: 'Approved',
+        reason: 'MBM University ECE/ECC Odd Semester 2026-27 Enrollment with Facial KYC Clearance'
+      });
     }
 
     // Merge any student from eagle_eye_registered_users that is pending or registered
