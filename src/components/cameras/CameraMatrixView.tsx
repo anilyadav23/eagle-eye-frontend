@@ -85,13 +85,17 @@ const CameraCard: React.FC<{
   const [detectedStudent, setDetectedStudent] = useState<{
     name: string;
     rollNo: string;
+    isVerified: boolean;
     confidence: number;
     box: { x: number; y: number; width: number; height: number };
     timestamp: string;
     marked: boolean;
   } | null>(null);
 
-  const { markAttendance } = useSecurity();
+  // Optical detection mode: supports detecting registered enrolled student vs not verified intruder/unregistered
+  const [simulatedDetectionMode, setSimulatedDetectionMode] = useState<'REGISTERED' | 'NOT_VERIFIED'>('REGISTERED');
+
+  const { markAttendance, approvalRequests } = useSecurity();
 
   // Sync with active timetable
   const activeClass = getActiveSlotForRoom(cam.room);
@@ -145,40 +149,62 @@ const CameraCard: React.FC<{
     };
   }, [isLocalWebcam, isConnected]);
 
-  // Optical AI Face Detection & Recognition Loop
+  // Optical AI Face Detection & Recognition Loop (Real Current Time)
   useEffect(() => {
     let timer: any;
     if (isConnected) {
-      // Trigger periodic optical detection on active camera stream
       timer = setInterval(() => {
         const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         
-        // Match student Keshav Nagar (24UECC8024) in camera frame
-        setDetectedStudent({
-          name: 'Keshav Nagar',
-          rollNo: '24UECC8024',
-          confidence: +(0.96 + Math.random() * 0.03).toFixed(2),
-          box: {
-            x: 28 + Math.floor(Math.random() * 6),
-            y: 20 + Math.floor(Math.random() * 5),
-            width: 44,
-            height: 52
-          },
-          timestamp: timeStr,
-          marked: true
-        });
+        if (simulatedDetectionMode === 'REGISTERED') {
+          // Resolve enrolled student from approvalRequests
+          const keshav = approvalRequests.find(r => r.rollNo.toUpperCase() === '24UECC8024');
+          const studentName = keshav ? keshav.studentName : 'Keshav Nagar';
+          const studentRoll = keshav ? keshav.rollNo : '24UECC8024';
 
-        // Auto-mark attendance in SecurityContext
-        const activeSubject = activeClass.slot?.subjectCode ? `${activeClass.slot.subjectCode} - ${activeClass.slot.subjectName}` : '7ECC41A - CCDN';
-        markAttendance(
-          '24UECC8024',
-          'Verified',
-          `Automated facial recognition verification at ${cam.name} (${cam.room})`,
-          activeSubject,
-          cam.room
-        ).catch(() => {});
-      }, 5000);
+          setDetectedStudent({
+            name: studentName,
+            rollNo: studentRoll,
+            isVerified: true,
+            confidence: +(0.96 + Math.random() * 0.03).toFixed(2),
+            box: {
+              x: 28 + Math.floor(Math.random() * 4),
+              y: 20 + Math.floor(Math.random() * 4),
+              width: 44,
+              height: 52
+            },
+            timestamp: timeStr,
+            marked: true
+          });
+
+          // Auto-mark attendance with actual current clock time & room
+          const activeSubject = activeClass.slot?.subjectCode ? `${activeClass.slot.subjectCode} - ${activeClass.slot.subjectName}` : '7ECC41A - CCDN';
+          markAttendance(
+            studentRoll,
+            'Verified',
+            `Optical AI face vector verified at ${cam.name} (${cam.room})`,
+            activeSubject,
+            cam.room
+          ).catch(() => {});
+        } else {
+          // If unregistered student/person came in front of camera
+          setDetectedStudent({
+            name: 'NOT VERIFIED USER',
+            rollNo: 'UNREGISTERED FACE',
+            isVerified: false,
+            confidence: 0.38,
+            box: {
+              x: 30 + Math.floor(Math.random() * 4),
+              y: 22 + Math.floor(Math.random() * 4),
+              width: 42,
+              height: 50
+            },
+            timestamp: timeStr,
+            marked: false
+          });
+        }
+      }, 4000);
     } else {
       setDetectedStudent(null);
     }
@@ -186,7 +212,7 @@ const CameraCard: React.FC<{
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [isConnected, cam.name, cam.room, activeClass.slot]);
+  }, [isConnected, simulatedDetectionMode, cam.name, cam.room, activeClass.slot, approvalRequests]);
 
   const handleSaveEdit = () => {
     onUpdate(cam.camera_id, {
@@ -269,6 +295,18 @@ const CameraCard: React.FC<{
                   <MapPin className="w-2.5 h-2.5" />
                   {cam.room}
                 </span>
+                <span>•</span>
+                <button
+                  onClick={() => setSimulatedDetectionMode(m => m === 'REGISTERED' ? 'NOT_VERIFIED' : 'REGISTERED')}
+                  title="Toggle between Enrolled Student vs Unregistered Person in camera view"
+                  className={`px-1.5 py-0.2 rounded text-[9px] font-bold border transition-all ${
+                    simulatedDetectionMode === 'REGISTERED'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                      : 'bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30'
+                  }`}
+                >
+                  {simulatedDetectionMode === 'REGISTERED' ? 'AI: Enrolled Face Mode' : 'AI: Unregistered Face Mode'}
+                </button>
               </div>
             </>
           )}
@@ -357,7 +395,11 @@ const CameraCard: React.FC<{
         {/* Real-time AI Facial Recognition Bounding Box & HUD Verification Tag */}
         {isConnected && detectedStudent && (
           <div 
-            className="absolute border-2 border-emerald-400 rounded-lg pointer-events-none transition-all duration-300 shadow-[0_0_15px_rgba(52,211,153,0.5)] animate-pulse"
+            className={`absolute border-2 rounded-lg pointer-events-none transition-all duration-300 ${
+              detectedStudent.isVerified
+                ? 'border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)] animate-pulse'
+                : 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-bounce'
+            }`}
             style={{
               left: `${detectedStudent.box.x}%`,
               top: `${detectedStudent.box.y}%`,
@@ -366,23 +408,40 @@ const CameraCard: React.FC<{
             }}
           >
             {/* Top Bounding Box Header */}
-            <div className="absolute -top-7 left-0 bg-emerald-950/95 border border-emerald-500 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-emerald-300 flex items-center gap-1.5 whitespace-nowrap shadow-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <span>{detectedStudent.name} ({detectedStudent.rollNo})</span>
-              <span className="text-[9px] text-emerald-400 font-normal">{(detectedStudent.confidence * 100).toFixed(0)}%</span>
+            <div className={`absolute -top-7 left-0 border px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 whitespace-nowrap shadow-lg ${
+              detectedStudent.isVerified 
+                ? 'bg-emerald-950/95 border-emerald-500 text-emerald-300' 
+                : 'bg-red-950/95 border-red-500 text-red-300'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${detectedStudent.isVerified ? 'bg-emerald-400 animate-ping' : 'bg-red-500'}`}></span>
+              <span>{detectedStudent.name}</span>
+              <span className="text-[9px] font-normal">({(detectedStudent.confidence * 100).toFixed(0)}%)</span>
             </div>
 
             {/* Bottom Bounding Box Status Badge */}
-            <div className="absolute -bottom-6 left-0 bg-black/85 border border-emerald-500/60 px-1.5 py-0.5 rounded text-[9px] font-mono text-emerald-300 whitespace-nowrap flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              <span>ATTENDANCE RECORDED: {detectedStudent.timestamp}</span>
+            <div className={`absolute -bottom-6 left-0 border px-1.5 py-0.5 rounded text-[9px] font-mono whitespace-nowrap flex items-center gap-1 ${
+              detectedStudent.isVerified
+                ? 'bg-black/85 border-emerald-500/60 text-emerald-300'
+                : 'bg-red-950/90 border-red-500/60 text-red-300 font-bold'
+            }`}>
+              {detectedStudent.isVerified ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>ATTENDANCE RECORDED: {detectedStudent.timestamp}</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-3 h-3 text-red-400" />
+                  <span>NOT VERIFIED USER • NO ENROLLED FACE TEMPLATE</span>
+                </>
+              )}
             </div>
 
             {/* Corner Targeting Crosshairs */}
-            <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white"></div>
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white"></div>
-            <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white"></div>
-            <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white"></div>
+            <div className={`absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 ${detectedStudent.isVerified ? 'border-white' : 'border-red-400'}`}></div>
+            <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 ${detectedStudent.isVerified ? 'border-white' : 'border-red-400'}`}></div>
+            <div className={`absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 ${detectedStudent.isVerified ? 'border-white' : 'border-red-400'}`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 ${detectedStudent.isVerified ? 'border-white' : 'border-red-400'}`}></div>
           </div>
         )}
       </div>

@@ -1289,13 +1289,60 @@ export const SecurityProvider: React.FC<{ children: ReactNode }> = ({ children }
       console.warn('Attendance mark offline fallback:', e);
     }
 
-    const nowTime = new Date().toLocaleTimeString('en-US');
+    const nowTime = new Date().toLocaleTimeString('en-US', { hour12: true });
+    
+    // Check if person exists in enrolled approval requests or registered users to resolve name
+    let studentName = 'Unverified User';
+    let studentPhoto = '';
+    let studentDept = 'Electronics & Communication Engineering';
+    
+    const matchingApproval = approvalRequests.find(r => r.rollNo.toLowerCase() === personId.toLowerCase());
+    if (matchingApproval) {
+      studentName = matchingApproval.studentName;
+      studentPhoto = matchingApproval.photos?.[0] || '';
+      studentDept = matchingApproval.department || studentDept;
+    } else if (personId.toUpperCase() === '24UECC8024') {
+      studentName = 'Keshav Nagar';
+      studentPhoto = '/students/24UECC8024_face.jpg';
+    } else if (personId.toUpperCase() === '24UECC8007') {
+      studentName = 'Anil Yadav';
+      studentPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face';
+    }
+
     const existing = attendanceRecords.find(a => a.person_id === personId);
     if (existing) {
-      const updated: AttendanceRecord = { ...existing, status, notes: notes || existing.notes, timestamp: nowTime };
+      const updated: AttendanceRecord = { 
+        ...existing, 
+        name: existing.name === 'Unknown Student' ? studentName : existing.name,
+        photo_url: existing.photo_url || studentPhoto,
+        status, 
+        notes: notes || existing.notes, 
+        timestamp: nowTime,
+        course: course || existing.course,
+        room: room || existing.room
+      };
       setAttendanceRecords(prev => prev.map(a => a.person_id === personId ? updated : a));
       setPersons(prev => prev.map(p => p.person_id === personId ? { ...p, attendance_status: status, attendance_time: nowTime } : p));
       return updated;
+    } else {
+      const newRec: AttendanceRecord = {
+        id: `att-rec-${Date.now()}`,
+        person_id: personId,
+        student_id: personId,
+        name: studentName,
+        role: 'Student',
+        department: studentDept,
+        course: course || '7ECC41A - CCDN',
+        room: room || 'Room EC-6',
+        status: status,
+        timestamp: nowTime,
+        confidence_score: 0.98,
+        photo_url: studentPhoto || '/students/24UECC8024_face.jpg',
+        verified_camera_id: 'CAM-006',
+        notes: notes || `Attendance recorded at ${nowTime}`
+      };
+      setAttendanceRecords(prev => [newRec, ...prev]);
+      return newRec;
     }
     return null;
   };
