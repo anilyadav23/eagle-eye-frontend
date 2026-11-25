@@ -3,10 +3,12 @@ import {
   Building2, Users, Calendar, CheckCircle2, AlertTriangle, 
   Clock, Camera, ShieldCheck, ChevronRight, FileText, 
   Search, Filter, ArrowUpRight, Check, X, Bell, Eye, Download, ShieldAlert,
-  GraduationCap, UserCheck2, RefreshCw, Trash2, UserX
+  GraduationCap, UserCheck2, RefreshCw, Trash2, UserX, Plus, Edit3
 } from 'lucide-react';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAuth } from '../../context/AuthContext';
+import { getTimetableSlots, getSlotLiveStatus, TimetablePeriod } from '../../data/timetableCatalog';
+import { TimetableManagerView } from './TimetableManagerView';
 
 interface PendingRequest {
   id: string;
@@ -32,28 +34,94 @@ interface HODDedicatedDashboardProps {
 export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () => {
   const { attendanceRecords, persons, cameras, approvalRequests, updateApprovalRequestStatus, deleteApprovalRequest, deleteUserProfile } = useSecurity();
   const { user } = useAuth();
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'attendance' | 'timetable' | 'camerawall'>('overview');
-  const [filterYear, setFilterYear] = useState('3');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'approvals' | 'timetable' | 'camerawall'>('overview');
+  const [filterYear, setFilterYear] = useState('4');
   const [filterSection, setFilterSection] = useState('A');
-  const [filterSubject, setFilterSubject] = useState('DBMS');
+  const [filterSubject, setFilterSubject] = useState('All');
 
   // Academic allocation modal state for approving students
   const [allocationModalReq, setAllocationModalReq] = useState<any | null>(null);
   const [allocDepartment, setAllocDepartment] = useState('Electronics & Communication Engineering');
   const [allocBranch, setAllocBranch] = useState('Electronics & Computer Control (ECC)');
-  const [allocSemester, setAllocSemester] = useState('3rd Semester');
-  const [allocYear, setAllocYear] = useState('2nd Year');
+  const [allocSemester, setAllocSemester] = useState('7th Semester');
+  const [allocYear, setAllocYear] = useState('4th Year');
   const [allocSection, setAllocSection] = useState('Section A');
 
   // Shared reactive registration & clearance approvals queue
   const pendingRequests = approvalRequests;
 
+  // Real-time Day and Date Detection
+  const todayDayName = (() => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const d = days[new Date().getDay()];
+    return d === 'Sunday' ? 'Monday' : d;
+  })();
+
+  // Current day's official live classes from Timetable
+  const todayClasses: TimetablePeriod[] = getTimetableSlots('Electronics & Computer Control (ECC)', '7th Semester', todayDayName);
+
+  // Real metrics derived from database / state
+  const registeredStudentsCount = (() => {
+    try {
+      const saved = localStorage.getItem('eagle_eye_registered_users');
+      if (saved) {
+        const list: any[] = JSON.parse(saved);
+        const stu = list.filter(u => u.role === 'Student').length;
+        if (stu > 0) return stu;
+      }
+    } catch (e) {}
+    const approvedStu = approvalRequests.filter(r => r.status === 'Approved').length;
+    return approvedStu > 0 ? approvedStu : 1;
+  })();
+
+  const activeCamerasCount = cameras.filter(c => c.status === 'Online').length || cameras.length || 6;
+  const facultyCount = 14; // Department of ECE/ECC/EEE Official Faculty Count
+
+  const departmentStats = [
+    { 
+      title: 'Department Faculty', 
+      count: `${facultyCount}`, 
+      subtext: 'LTV, KSM, KPC, DS, KP, YK, NS On-Duty', 
+      icon: Users, 
+      color: 'text-indigo-400', 
+      bg: 'bg-indigo-500/10', 
+      border: 'border-indigo-500/30' 
+    },
+    { 
+      title: 'Total Enrolled Students', 
+      count: `${registeredStudentsCount}`, 
+      subtext: `${registeredStudentsCount} Verified in ECE/ECC/EEE`, 
+      icon: GraduationCap, 
+      color: 'text-emerald-400', 
+      bg: 'bg-emerald-500/10', 
+      border: 'border-emerald-500/30' 
+    },
+    { 
+      title: 'Pending Approvals', 
+      count: `${pendingRequests.filter(r => r.status === 'Pending').length}`, 
+      subtext: 'Admissions & Biometric Verification', 
+      icon: AlertTriangle, 
+      color: 'text-amber-400', 
+      bg: 'bg-amber-500/10', 
+      border: 'border-amber-500/30' 
+    },
+    { 
+      title: 'Active Classrooms', 
+      count: `${activeCamerasCount}`, 
+      subtext: 'Lecture Halls EC-6, EC-11, L-5, EC-10', 
+      icon: Camera, 
+      color: 'text-sky-400', 
+      bg: 'bg-sky-500/10', 
+      border: 'border-sky-500/30' 
+    }
+  ];
+
   const handleOpenApproveModal = (req: any) => {
     setAllocationModalReq(req);
     setAllocDepartment(req.department || 'Electronics & Communication Engineering');
     setAllocBranch(req.branch || 'Electronics & Computer Control (ECC)');
-    setAllocSemester(req.semester && req.semester !== 'Pending Allocation' ? req.semester : '3rd Semester');
-    setAllocYear(req.year && req.year !== 'Pending Allocation' ? req.year : '2nd Year');
+    setAllocSemester(req.semester && req.semester !== 'Pending Allocation' ? req.semester : '7th Semester');
+    setAllocYear(req.year && req.year !== 'Pending Allocation' ? req.year : '4th Year');
     setAllocSection(req.section && req.section !== 'Pending' ? req.section : 'Section A');
   };
 
@@ -88,23 +156,6 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
     }
   };
 
-  // Official Timetable schedule matrix (MBM University Session 2026-27)
-  const [timetable] = useState([
-    { period: 'Period 1 (10:00 - 10:55)', subject: '7ECC41A - Computer Communication & Data Networks (CCDN)', teacher: 'Lata Vaishnav (LTV)', room: 'Room EC-6', status: 'In Progress', attendance: '94% (48/51)' },
-    { period: 'Period 2 (10:55 - 11:50)', subject: '7ECC52A - Robotics Engineering', teacher: 'Kapoor Chand (KPC)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
-    { period: 'Period 3 (11:50 - 12:45)', subject: '7ECC44B / 41B / 42B - Lab Batches (A1, A2, A3)', teacher: 'DS / LTV / KSM', room: 'EC-11 / L-5 / EC-10', status: 'Upcoming', attendance: 'Scheduled' },
-    { period: 'Period 4 (02:00 - 02:55)', subject: '7ECC44A - Parallel Processing Techniques (PPT)', teacher: 'Dhirendra Sharma (DS)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
-    { period: 'Period 5 (02:55 - 03:50)', subject: '7ECC42A - VLSI Design Technology', teacher: 'Khushbu Mehta (KSM)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' },
-    { period: 'Period 6 (03:50 - 04:45)', subject: '7ECC43A - Real Time Embedded Systems (RTES)', teacher: 'Kapoor Chand (KPC)', room: 'Room EC-6', status: 'Upcoming', attendance: 'Scheduled' }
-  ]);
-
-  const departmentStats = [
-    { title: 'Department Faculty', count: '24', subtext: '22 On-Duty Today', icon: Users, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30' },
-    { title: 'Total CS Students', count: '486', subtext: '94.2% Overall Attendance', icon: GraduationCap, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-    { title: 'Pending Approvals', count: `${pendingRequests.filter(r => r.status === 'Pending').length}`, subtext: 'Registrations & Photo Updates', icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-    { title: 'Active Classrooms', count: '8', subtext: 'Real-Time AI Stream Active', icon: Camera, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/30' }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Top Banner for HOD */}
@@ -116,25 +167,24 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
           <div>
             <div className="flex items-center space-x-2.5">
               <h1 className="text-xl font-black text-white tracking-wide">
-                Department of Computer Science & Engineering
+                Department of Electronics & Communication Engineering
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                 HOD EXECUTIVE PORTAL
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Logged in as: <strong className="text-slate-200">{user?.full_name || 'Dr. Rajesh Iyer (HOD)'}</strong> • Department Operations & Academic Surveillance
+              Logged in as: <strong className="text-slate-200">{user?.full_name || 'Prof. Kapil Parihar (HOD)'}</strong> • Department Operations & Academic Surveillance
             </p>
           </div>
         </div>
 
-        {/* Sub-navigation tabs */}
+        {/* Sub-navigation tabs without Audit & Records */}
         <div className="flex items-center space-x-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
           {[
             { id: 'overview', label: 'Department Overview' },
             { id: 'approvals', label: `Approvals Queue (${pendingRequests.filter(r => r.status === 'Pending').length})` },
             { id: 'timetable', label: 'Department Timetable' },
-            { id: 'attendance', label: 'Audit & Records' },
             { id: 'camerawall', label: 'Classroom Surveillance' },
           ].map(tab => (
             <button
@@ -176,57 +226,77 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
       {/* Dynamic Sub-tab Views */}
       {activeSubTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Ongoing Classes Monitor */}
+          {/* Ongoing Classes Monitor - Synced with Today's Date, Day & Time */}
           <div className="lg:col-span-8 bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-sky-400" />
-                  Live Academic Classes in Progress
+                  Live Academic Classes in Progress ({todayDayName})
                 </h3>
-                <p className="text-xs text-slate-400">Automated AI facial verification running across Department lecture halls</p>
+                <p className="text-xs text-slate-400">
+                  Scheduled for today • Real-time AI facial verification running across lecture halls
+                </p>
               </div>
-              <span className="text-xs font-mono px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
+              <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                 Active Roll Call
               </span>
             </div>
 
             <div className="space-y-3">
-              {timetable.map((item, idx) => (
-                <div key={idx} className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-indigo-500/40 transition-all flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-bold text-white">{item.subject}</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
-                        {item.room}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 flex items-center space-x-2">
-                      <span>Faculty: <strong className="text-slate-300">{item.teacher}</strong></span>
-                      <span>•</span>
-                      <span>{item.period}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg ${
-                      item.status === 'In Progress' 
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
-                        : 'bg-slate-800 text-slate-400'
-                    }`}>
-                      {item.attendance}
-                    </span>
-                    <button 
-                      onClick={() => setActiveSubTab('camerawall')}
-                      className="px-2.5 py-1 text-xs rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition-all font-semibold flex items-center gap-1"
-                    >
-                      <Eye className="w-3 h-3" />
-                      View Feed
-                    </button>
-                  </div>
+              {todayClasses.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+                  No classes scheduled for today ({todayDayName}).
                 </div>
-              ))}
+              ) : (
+                todayClasses.map((item, idx) => {
+                  const live = getSlotLiveStatus(item.timeSlot);
+                  return (
+                    <div key={idx} className={`p-3.5 rounded-xl border transition-all flex flex-wrap items-center justify-between gap-3 ${
+                      live.isLive 
+                        ? 'bg-slate-950/90 border-emerald-500/50 shadow-md shadow-emerald-950/20' 
+                        : 'bg-slate-950/60 border-slate-800/80 hover:border-indigo-500/40'
+                    }`}>
+                      <div className="space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-bold text-white">{item.subjectName}</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold">
+                            {item.subjectCode}
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                            {item.room}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 flex items-center space-x-2">
+                          <span>Faculty: <strong className="text-slate-300">{item.facultyName}</strong> ({item.facultyCode})</span>
+                          <span>•</span>
+                          <span className="font-mono text-sky-400">Period {item.periodNumber} ({item.timeSlot})</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                          live.isLive
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse' 
+                            : live.status === 'Completed'
+                            ? 'bg-slate-800/80 text-slate-400 border-slate-700'
+                            : 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+                        }`}>
+                          {live.status === 'In Progress' ? 'In Progress' : live.status}
+                        </span>
+                        <button 
+                          onClick={() => setActiveSubTab('camerawall')}
+                          className="px-2.5 py-1 text-xs rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition-all font-semibold flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3" />
+                          View Feed
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -419,57 +489,9 @@ export const HODDedicatedDashboard: React.FC<HODDedicatedDashboardProps> = () =>
         </div>
       )}
 
-      {/* Attendance & Timetable Tab */}
-      {(activeSubTab === 'attendance' || activeSubTab === 'timetable') && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-emerald-400" />
-                Department Attendance Master Log
-              </h2>
-              <p className="text-xs text-slate-400">Total automated records generated by smart camera nodes today</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-mono text-slate-400">
-                Total Logs: {attendanceRecords.length}
-              </span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                <tr>
-                  <th className="py-2.5 px-3">Student Name</th>
-                  <th className="py-2.5 px-3">Roll ID</th>
-                  <th className="py-2.5 px-3">Course / Subject</th>
-                  <th className="py-2.5 px-3">Room</th>
-                  <th className="py-2.5 px-3">Time</th>
-                  <th className="py-2.5 px-3">AI Confidence</th>
-                  <th className="py-2.5 px-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono">
-                {attendanceRecords.map(rec => (
-                  <tr key={rec.id} className="hover:bg-slate-900/60 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-white font-sans">{rec.name}</td>
-                    <td className="py-2.5 px-3 text-slate-400">{rec.student_id || rec.person_id}</td>
-                    <td className="py-2.5 px-3 text-slate-300 font-sans">{rec.course || 'CS301 - Computer Vision'}</td>
-                    <td className="py-2.5 px-3 text-slate-400">{rec.room || 'Lecture Hall 101'}</td>
-                    <td className="py-2.5 px-3 text-sky-400">{rec.timestamp}</td>
-                    <td className="py-2.5 px-3 text-emerald-400 font-bold">{Math.round((rec.confidence_score || 0.95) * 100)}%</td>
-                    <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                        {rec.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Department Timetable Hub Tab */}
+      {activeSubTab === 'timetable' && (
+        <TimetableManagerView />
       )}
 
       {/* Academic Allocation & Approval Modal */}

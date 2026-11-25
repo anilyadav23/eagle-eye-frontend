@@ -31,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           group: 'Department Leadership',
           items: [
             { id: 'hod', label: 'HOD Executive Portal', icon: Building2, badge: 'HOD', badgeColor: 'bg-indigo-600' },
-            { id: 'attendance', label: 'Department Attendance', icon: GraduationCap, badge: `${verifiedCount}`, badgeColor: 'bg-emerald-600' },
             { id: 'timetable', label: 'Department Timetable', icon: Calendar, badge: '18 Classes', badgeColor: 'bg-purple-600' },
             { id: 'registration', label: 'Student Admissions & KYC', icon: UserPlus, badge: 'Review', badgeColor: 'bg-pink-600' },
           ]
